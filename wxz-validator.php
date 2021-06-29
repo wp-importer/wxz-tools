@@ -1,7 +1,7 @@
 <?php
 require __DIR__ . '/vendor/autoload.php';
 
-use Opis\JsonSchema\{Helper, Validator};
+use Opis\JsonSchema\Validator;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 
 $self = array_shift( $_SERVER['argv'] );
@@ -10,86 +10,171 @@ if ( empty( $_SERVER['argv'] )) {
 	exit(1);
 }
 
-// Create a validator.
-$validator = new Validator();
-$resolver = $validator->resolver();
-
-// Override the schema namespaces to load them locally.
-$resolver->registerPrefix( 'https://wordpress.org/schema/', __DIR__ . '/schema' );
-
-// Create an error formatter.
-$errorFormatter = new ErrorFormatter();
-
 require __DIR__ . '/libs/class-pclzip.php';
 
-function raise_error( $code, $message ) {
-	echo 'ERR ', $message, PHP_EOL;
-}
+class WXZ_Validator {
+	public $errors;
+	public $warnings;
+	public $counter;
+	private $jsonValidator;
+	private $errorFormatter;
 
-function raise_warning( $code, $message ) {
-	echo 'WARN ', $message, PHP_EOL;
-}
+	private $schemas = array(
+		'users' => 'user',
+	);
 
-foreach ( $_SERVER['argv'] as $filename ) {
-	if ( ! file_exists( $filename ) ) {
-		raise_error( 'file-exists', $filename . ': file does not exist.' );
-		continue;
-	}
-	if ( ! is_readable( $filename ) ) {
-		raise_error( 'file-accessible', $filename . ': file not accessible.' );
-		continue;
-	}
-	$archive = new PclZip( $filename );
-	if ( ! $archive ) {
-		raise_error( 'zip-library', $filename . ': Error loading zip library.' );
-		continue;
-	}
-	$archive_files = $archive->extract( PCLZIP_OPT_EXTRACT_AS_STRING );
-	if ( $archive->errorCode() ) {
-		raise_error( 'zip-parsing', $filename . ': ' . $archive->errorInfo() );
-		continue;
-	}
-	$archive_files = $archive->extract( PCLZIP_OPT_EXTRACT_AS_STRING );
+	public function __construct() {
+		// Create a validator.
+		$this->jsonValidator = new Validator();
+		$resolver = $this->jsonValidator->resolver();
 
-	foreach ( $archive_files as $file ) {
-		if ( $file['folder'] ) {
-			continue;
+		// Override the schema namespaces to load them locally.
+		$resolver->registerPrefix( 'https://wordpress.org/schema/', __DIR__ . '/schema' );
+
+		// Create an error formatter.
+		$this->errorFormatter = new ErrorFormatter();
+
+	}
+
+	function raise_error( $code, $message ) {
+		$this->errors += 1;
+		echo 'ERR ', $message, PHP_EOL;
+	}
+
+	function raise_warning( $code, $message ) {
+		$this->warnings += 1;
+		echo 'WARN ', $message, PHP_EOL;
+	}
+
+	public function validate( $zip_filename ) {
+		$this->errors = 0;
+		$this->warnings = 0;
+		$this->counter = array();
+
+		if ( ! file_exists( $zip_filename ) ) {
+			$this->raise_error( 'file-exists', $zip_filename . ': file does not exist.' );
+			return false;
 		}
-		$file_id = $filename . ' (' . $file['filename'] . ')';
+		if ( ! is_readable( $zip_filename ) ) {
+			$this->raise_error( 'file-accessible', $zip_filename . ': file not accessible.' );
+			return false;
+		}
+		$archive = new PclZip( $zip_filename );
+		$zip_filename = basename( $zip_filename );
+		if ( ! $archive ) {
+			$this->raise_error( 'zip-library', $zip_filename . ': Error loading zip library.' );
+			return false;
+		}
+		$archive_files = $archive->extract( PCLZIP_OPT_EXTRACT_AS_STRING );
+		if ( $archive->errorCode() ) {
+			$this->raise_error( 'zip-parsing', $zip_filename . ': ' . $archive->errorInfo() );
+			return false;
+		}
 
-		$type = dirname( $file['filename'] );
-		$name = basename( $file['filename'], '.json' );
-		$item = json_decode( $file['content'], true );
-
-		if ( 'site' === $type ) {
-			if ( 'config' === $name ) {
-				if ( false === $item ) {
-					raise_error( 'invalid-config', "$file_id: could not be parsed." );
-					continue;
-				}
-
-				if ( ! isset( $config['title'] ) ) {
-					raise_warning( 'title-missing', "$file_id: doesn't contain a title." );
-				}
-				continue;
+		$files = array();
+		foreach ( $archive_files as $file ) {
+			if ( ! $file['folder'] ) {
+				$files[ $file['filename'] ] = trim( $file['content'] );
 			}
 		}
 
-		if ( 'users' === $type ) {
-			// Helper::toJSON() transforms associative arrays produced by json_decode() into actual objects.
-			$result = $validator->validate( Helper::toJSON( $item ), 'https://wordpress.org/schema/user.json' );
+		if ( ! isset( $files['mimetype'] ) ) {
+			$this->raise_error( 'mimetype-missing', $zip_filename . ': mimetype file is missing.' );
+			return false;
+		}
+
+		$mimetype = 'application/vnd.wordpress.export+zip';
+		if ( $mimetype !== $files['mimetype'] ) {
+			$this->raise_error( 'mimetype-missing', $zip_filename . '/mimetype: content should be "' . $mimetype .'" (found: "' . substr( $files['mimetype'], 100 ) . '")' );
+			return false;
+		}
+
+		unset( $files['mimetype'] );
+		$schema_warned = array();
+		foreach ( $files as $filename => $content ) {
+			$file_id = "$zip_filename/$filename";
+
+			$type = dirname( $filename );
+			$name = basename( $filename, '.json' );
+			$item = json_decode( $content );
+
+			if ( 'site' === $type ) {
+				if ( 'config' === $name ) {
+					if ( false === $item ) {
+						$this->raise_error( 'invalid-config', "$file_id: could not be parsed." );
+						continue;
+					}
+
+					if ( ! isset( $item->title ) ) {
+						$this->raise_warning( 'title-missing', "$file_id: doesn't contain a title." );
+					}
+					continue;
+				}
+			}
+
+			if ( ! isset( $this->schemas[ $type ] ) ) {
+				if ( ! isset( $schema_warned[ $type ] ) ) {
+					$this->raise_warning( 'unknown-schema', $file_id . ': Unknown schema for "' . $type . '".' );
+					$schema_warned[ $type ] = true;
+				}
+				continue;
+			}
+
+			$schema = $this->schemas[ $type ];
+
+			try {
+				$result = $this->jsonValidator->validate( $item, "https://wordpress.org/schema/$schema.json" );
+			} catch ( Exception $e ) {
+				$this->raise_warning( 'unknown-schema', "$file_id: " . $e->getMessage() );
+				continue;
+			}
 			if ( $result->isValid() ) {
-				echo "Valid user\n";
+				if ( ! isset( $this->counter[ $type ] ) ) {
+					$this->counter[ $type ] = 0;
+				}
+				$this->counter[ $type ] += 1;
 			} else {
 				// Get the error
 				$error = $result->error();
 
 				echo json_encode(
-					$errorFormatter->format($error, true),
+					$this->errorFormatter->format( $error, true ),
 					JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
 					) . "\n";
 				echo "-----------\n";
 			}
 		}
+
+		return ! $this->errors;
 	}
+}
+
+$errors = false;
+
+$validator = new WXZ_Validator;
+foreach ( $_SERVER['argv'] as $zip_filename ) {
+	if ( $validator->validate( $zip_filename ) ) {
+		if ( empty( $validator->counter ) ) {
+			$validator->raise_warning( 'empty', "No data found inside the file." );
+		}
+		echo basename( $zip_filename ), ' is valid';
+		if ( $validator->warnings ) {
+			echo ', ', $validator->warnings, ' warning', $validator->warnings > 1 ? 's were' : ' was', ' encountered';
+		}
+		echo '.', PHP_EOL;
+
+		if ( ! empty( $validator->counter ) ) {
+			echo 'The file contains:', PHP_EOL;
+			foreach ( $validator->counter as $type => $count ) {
+				echo '- ', $type, ': ', $count, PHP_EOL;
+			}
+		}
+	} else {
+		echo basename( $zip_filename ), ' is invalid!', PHP_EOL;
+		$errors = true;
+	}
+}
+
+if ( $errors ) {
+	exit(1);
 }
