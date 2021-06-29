@@ -4,9 +4,9 @@ use Opis\JsonSchema\Validator;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 
 class WXZ_Validator {
-	public $errors;
-	public $warnings;
-	public $counter;
+	public $errors = 0;
+	public $warnings = 0;
+	public $counter = array();
 	private $jsonValidator;
 	private $errorFormatter;
 	private $mimetype = 'application/vnd.wordpress.export+zip';
