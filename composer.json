@@ -1,4 +1,7 @@
 {
+	"name": "wordpress/wxz-tools",
+	"license": "GPL-2.0-or-later",
+	"description": "Tools for the WXZ (zipped WordPress export) format.",
 	"autoload": {
 		"classmap": [
 			"includes/class-wp-error.php",
