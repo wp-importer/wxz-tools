@@ -7,13 +7,14 @@ if ( empty( $_SERVER['argv'] )) {
 
 require __DIR__ . '/vendor/autoload.php';
 
+$terminal_color_red = "\e[31m";
+$terminal_color_green = "\e[32m";
+$terminal_color_yellow = "\e[33m";
+$terminal_color_reset = "\e[0m";
+
 $errors = false;
 $validator = new WXZ_Validator;
 foreach ( $_SERVER['argv'] as $zip_filename ) {
-	$terminal_color_red = "\e[31m";
-	$terminal_color_green = "\e[32m";
-	$terminal_color_yellow = "\e[33m";
-	$terminal_color_reset = "\e[0m";
 	if ( $validator->validate( $zip_filename ) ) {
 		if ( empty( $validator->counter ) ) {
 			$validator->raise_warning( 'empty', "No data found inside the file." );
