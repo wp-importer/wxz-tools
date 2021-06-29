@@ -1,0 +1,14 @@
+{
+	"version": 1,
+	"id": 1,
+	"login": "pento",
+	"name": "Gary",
+	"email": "foo@bar.com",
+	"url": "https://pento.net",
+	"meta": [
+		{
+			"key": "foo",
+			"value": "bar"
+		}
+	]
+}

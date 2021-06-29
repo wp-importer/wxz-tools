@@ -1,0 +1,29 @@
+{
+	"$id": "https://wordpress.org/schema/user.json",
+	"type": "object",
+	"properties": {
+		"version": {
+			"type": "integer",
+			"const": 1
+		},
+		"id": {
+			"type": "integer"
+		},
+		"login": {
+			"type": "string"
+		},
+		"name": {
+			"type": "string"
+		},
+		"email": {
+			"type": "string"
+		},
+		"url": {
+			"type": "string"
+		},
+		"meta": {
+			"$ref": "https://wordpress.org/schema/meta.json"
+		}
+	},
+	"required": [ "version" ]
+}

@@ -1,9 +1,19 @@
 <?php
+require __DIR__ . '/vendor/autoload.php';
+
+use Opis\JsonSchema\{Helper, Validator};
+use Opis\JsonSchema\Errors\ErrorFormatter;
+
 $self = array_shift( $_SERVER['argv'] );
 if ( empty( $_SERVER['argv'] )) {
 	echo 'Usage: ', $self, ' <wordpress-export.zip>', PHP_EOL;
 	exit(1);
 }
+
+$validator = new Validator();
+$resolver = $validator->loader()->resolver();
+$resolver->registerFile( 'https://wordpress.org/schema/user.json', __DIR__ . '/schema/user.json' );
+$resolver->registerFile( 'https://wordpress.org/schema/meta.json', __DIR__ . '/schema/meta.json' );
 
 require __DIR__ . '/libs/class-pclzip.php';
 
@@ -57,6 +67,25 @@ foreach ( $_SERVER['argv'] as $filename ) {
 					raise_warning( 'title-missing', "$file_id: doesn't contain a title." );
 				}
 				continue;
+			}
+		}
+
+		if ( 'users' === $type ) {
+			$result = $validator->validate( Helper::toJSON( $item ), 'https://wordpress.org/schema/user.json' );
+			if ( $result->isValid() ) {
+				echo "Valid user\n";
+			} else {
+				// Get the error
+				$error = $result->error();
+
+				// Create an error formatter
+				$formatter = new ErrorFormatter();
+
+				echo json_encode(
+					$formatter->format($error, true),
+					JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+					) . "\n";
+				echo "-----------\n";
 			}
 		}
 	}
