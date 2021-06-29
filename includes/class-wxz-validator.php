@@ -9,6 +9,7 @@ class WXZ_Validator {
 	public $counter;
 	private $jsonValidator;
 	private $errorFormatter;
+	private $mimetype = 'application/vnd.wordpress.export+zip';
 
 	private $schemas = array(
 		'users' => 'user',
@@ -27,14 +28,46 @@ class WXZ_Validator {
 
 	}
 
-	function raise_error( $code, $message ) {
+	public function raise_error( $code, $message ) {
 		$this->errors += 1;
 		echo 'ERR ', $message, PHP_EOL;
 	}
 
-	function raise_warning( $code, $message ) {
+	public function raise_warning( $code, $message ) {
 		$this->warnings += 1;
 		echo 'WARN ', $message, PHP_EOL;
+	}
+
+	public function verify_file_is_valid( $zip_filename ) {
+		if ( ! file_exists( $zip_filename ) ) {
+			$this->raise_error( 'file-exists', $zip_filename . ': file does not exist.' );
+			return false;
+		}
+
+		if ( ! is_readable( $zip_filename ) ) {
+			$this->raise_error( 'file-accessible', $zip_filename . ': file not accessible.' );
+			return false;
+		}
+
+		$f = fopen( $zip_filename, 'rb' );
+		if ( "PK\x3\x4" !== fread( $f, 4 ) ) {
+			$this->raise_error( 'not-a-zip', $zip_filename . ': ZIP header could not be found.' );
+			return false;
+		}
+
+		fseek( $f, 30 );
+		if ( 'mimetype' !== fread( $f, 8 ) ) {
+			$this->raise_error( 'first-file-not-mimetype', $zip_filename . ': The first file in the ZIP needs to be called mimetype.' );
+			return false;
+		}
+
+		fseek( $f, 38 );
+		if ( $this->mimetype !== fread( $f, strlen( $this->mimetype ) ) ) {
+			$this->raise_error( 'first-file-not-mimetype', $zip_filename . ': The file mimetype must only contain "' . $this->mimetype . '".' );
+			return false;
+		}
+
+		return true;
 	}
 
 	public function validate( $zip_filename ) {
@@ -42,14 +75,10 @@ class WXZ_Validator {
 		$this->warnings = 0;
 		$this->counter = array();
 
-		if ( ! file_exists( $zip_filename ) ) {
-			$this->raise_error( 'file-exists', $zip_filename . ': file does not exist.' );
+		if ( ! $this->verify_file_is_valid( $zip_filename ) ) {
 			return false;
 		}
-		if ( ! is_readable( $zip_filename ) ) {
-			$this->raise_error( 'file-accessible', $zip_filename . ': file not accessible.' );
-			return false;
-		}
+
 		$archive = new PclZip( $zip_filename );
 		$zip_filename = basename( $zip_filename );
 		if ( ! $archive ) {
@@ -64,23 +93,17 @@ class WXZ_Validator {
 
 		$files = array();
 		foreach ( $archive_files as $file ) {
-			if ( ! $file['folder'] ) {
-				$files[ $file['filename'] ] = trim( $file['content'] );
+			if ( $file['folder'] ) {
+				continue;
 			}
+
+			if ( 'mimetype' === $file['filename'] ) {
+				// Already checked above.
+				continue;
+			}
+			$files[ $file['filename'] ] = trim( $file['content'] );
 		}
 
-		if ( ! isset( $files['mimetype'] ) ) {
-			$this->raise_error( 'mimetype-missing', $zip_filename . ': mimetype file is missing.' );
-			return false;
-		}
-
-		$mimetype = 'application/vnd.wordpress.export+zip';
-		if ( $mimetype !== $files['mimetype'] ) {
-			$this->raise_error( 'mimetype-missing', $zip_filename . '/mimetype: content should be "' . $mimetype .'" (found: "' . substr( $files['mimetype'], 100 ) . '")' );
-			return false;
-		}
-
-		unset( $files['mimetype'] );
 		$schema_warned = array();
 		foreach ( $files as $filename => $content ) {
 			$file_id = "$zip_filename/$filename";
