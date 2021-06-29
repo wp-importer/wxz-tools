@@ -6,7 +6,6 @@ if ( empty( $_SERVER['argv'] )) {
 }
 
 require __DIR__ . '/vendor/autoload.php';
-require __DIR__ . '/includes/class-wxz-validator.php';
 
 $errors = false;
 $validator = new WXZ_Validator;

@@ -1,6 +1,12 @@
 {
+	"autoload": {
+		"classmap": [
+			"includes/class-wxz-validator.php"
+		]
+	},
     "require": {
 		"php": "^7.4 || ^8.0",
-        "opis/json-schema": "^2.1"
+        "opis/json-schema": "^2.1",
+		"chamilo/pclzip": "^2.8"
     }
 }

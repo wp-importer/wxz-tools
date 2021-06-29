@@ -3,8 +3,6 @@
 use Opis\JsonSchema\Validator;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 
-require __DIR__ . '/../libs/class-pclzip.php';
-
 class WXZ_Validator {
 	public $errors;
 	public $warnings;
@@ -22,7 +20,7 @@ class WXZ_Validator {
 		$resolver = $this->jsonValidator->resolver();
 
 		// Override the schema namespaces to load them locally.
-		$resolver->registerPrefix( 'https://wordpress.org/schema/', __DIR__ . '/schema' );
+		$resolver->registerPrefix( 'https://wordpress.org/schema/', __DIR__ . '/../schema' );
 
 		// Create an error formatter.
 		$this->errorFormatter = new ErrorFormatter();
