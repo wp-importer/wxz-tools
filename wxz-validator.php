@@ -10,10 +10,15 @@ if ( empty( $_SERVER['argv'] )) {
 	exit(1);
 }
 
+// Create a validator.
 $validator = new Validator();
-$resolver = $validator->loader()->resolver();
-$resolver->registerFile( 'https://wordpress.org/schema/user.json', __DIR__ . '/schema/user.json' );
-$resolver->registerFile( 'https://wordpress.org/schema/meta.json', __DIR__ . '/schema/meta.json' );
+$resolver = $validator->resolver();
+
+// Override the schema namespaces to load them locally.
+$resolver->registerPrefix( 'https://wordpress.org/schema/', __DIR__ . '/schema' );
+
+// Create an error formatter.
+$errorFormatter = new ErrorFormatter();
 
 require __DIR__ . '/libs/class-pclzip.php';
 
@@ -71,6 +76,7 @@ foreach ( $_SERVER['argv'] as $filename ) {
 		}
 
 		if ( 'users' === $type ) {
+			// Helper::toJSON() transforms associative arrays produced by json_decode() into actual objects.
 			$result = $validator->validate( Helper::toJSON( $item ), 'https://wordpress.org/schema/user.json' );
 			if ( $result->isValid() ) {
 				echo "Valid user\n";
@@ -78,11 +84,8 @@ foreach ( $_SERVER['argv'] as $filename ) {
 				// Get the error
 				$error = $result->error();
 
-				// Create an error formatter
-				$formatter = new ErrorFormatter();
-
 				echo json_encode(
-					$formatter->format($error, true),
+					$errorFormatter->format($error, true),
 					JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
 					) . "\n";
 				echo "-----------\n";
