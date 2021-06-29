@@ -11,8 +11,9 @@ class WXZ_Validator {
 	private $errorFormatter;
 	private $mimetype = 'application/vnd.wordpress.export+zip';
 
+	// Maps the files in the directories to the schema.
 	private $schemas = array(
-		'users' => 'user',
+		'users' => 'https://wordpress.org/schema/user.json',
 	);
 
 	public function __construct() {
@@ -137,9 +138,9 @@ class WXZ_Validator {
 			$schema = $this->schemas[ $type ];
 
 			try {
-				$result = $this->jsonValidator->validate( $item, "https://wordpress.org/schema/$schema.json" );
+				$result = $this->jsonValidator->validate( $item, $schema );
 			} catch ( Exception $e ) {
-				$this->raise_warning( 'unknown-schema', "$file_id: " . $e->getMessage() );
+				$this->raise_warning( 'unknown-schema', $file_id . ': ' . $e->getMessage() );
 				continue;
 			}
 			if ( $result->isValid() ) {
@@ -148,14 +149,13 @@ class WXZ_Validator {
 				}
 				$this->counter[ $type ] += 1;
 			} else {
-				// Get the error
-				$error = $result->error();
-
-				echo json_encode(
-					$this->errorFormatter->format( $error, true ),
-					JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
-					) . "\n";
-				echo "-----------\n";
+				$this->raise_warning(
+					'unknown-schema',
+					$file_id . ': ' . json_encode(
+						$this->errorFormatter->format( $result->error(), true ),
+						JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+					)
+				);
 			}
 		}
 
