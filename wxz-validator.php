@@ -1,23 +1,23 @@
 <?php
 $self = array_shift( $_SERVER['argv'] );
-if ( empty( $_SERVER['argv'] )) {
+if ( empty( $_SERVER['argv'] ) ) {
 	echo 'Usage: ', $self, ' <wordpress-export.zip>', PHP_EOL;
-	exit(1);
+	exit( 1 );
 }
 
 require __DIR__ . '/vendor/autoload.php';
 
-$terminal_color_red = "\e[31m";
-$terminal_color_green = "\e[32m";
+$terminal_color_red    = "\e[31m";
+$terminal_color_green  = "\e[32m";
 $terminal_color_yellow = "\e[33m";
-$terminal_color_reset = "\e[0m";
+$terminal_color_reset  = "\e[0m";
 
-$errors = false;
+$errors    = false;
 $validator = new WXZ_Validator;
 foreach ( $_SERVER['argv'] as $zip_filename ) {
 	if ( $validator->validate( $zip_filename ) ) {
 		if ( empty( $validator->counter ) ) {
-			$validator->raise_warning( 'empty', "No data found inside the file." );
+			$validator->raise_warning( 'empty', 'No data found inside the file.' );
 		}
 		if ( $validator->warnings ) {
 			echo PHP_EOL;
@@ -42,5 +42,5 @@ foreach ( $_SERVER['argv'] as $zip_filename ) {
 }
 
 if ( $errors ) {
-	exit(1);
+	exit( 1 );
 }

@@ -10,5 +10,15 @@
 		"php": "^7.4 || ^8.0",
         "opis/json-schema": "^2.1",
 		"chamilo/pclzip": "^2.8"
-    }
+    },
+    "require-dev": {
+		"wp-coding-standards/wpcs": "^2.3",
+		"phpcompatibility/php-compatibility": "^9.3",
+		"dealerdirect/phpcodesniffer-composer-installer": "^0.7.1",
+		"sirbrillig/phpcs-variable-analysis": "^2.11"
+	},
+    "scripts": {
+		"format": "phpcbf --standard=phpcs.xml.dist --report-summary --report-source",
+		"lint": "phpcs --standard=phpcs.xml.dist --runtime-set ignore_warnings_on_exit 1"
+	}
 }

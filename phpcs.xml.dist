@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<ruleset name="WordPress Coding Standards for Gutenberg Plugin">
+	<description>Sniffs for WordPress plugins, with minor modifications for Gutenberg</description>
+
+	<rule ref="PHPCompatibility"/>
+	<config name="testVersion" value="7.4-"/>
+
+	<rule ref="WordPress-Core"/>
+
+	<rule ref="VariableAnalysis.CodeAnalysis.VariableAnalysis">
+		<properties>
+			<property name="allowUnusedParametersBeforeUsed" value="true"/>
+		</properties>
+	</rule>
+	<rule ref="WordPress.CodeAnalysis.EmptyStatement"/>
+
+	<arg value="ps"/>
+	<arg name="extensions" value="php"/>
+
+	<file>./includes</file>
+	<file>./wxz-converter.php</file>
+	<file>./wxz-validator.php</file>
+</ruleset>

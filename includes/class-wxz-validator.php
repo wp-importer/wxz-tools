@@ -4,12 +4,12 @@ use Opis\JsonSchema\Validator;
 use Opis\JsonSchema\Errors\ErrorFormatter;
 
 class WXZ_Validator {
-	public $errors = 0;
+	public $errors   = 0;
 	public $warnings = 0;
-	public $counter = array();
-	private $jsonValidator;
-	private $errorFormatter;
-	private $mimetype = 'application/vnd.wordpress.export+zip';
+	public $counter  = array();
+	private $json_validator;
+	private $error_formatter;
+	private $mimetype = 'application/vnd.WordPress.export+zip';
 
 	// Maps the files in the directories to the schema.
 	private $schemas = array(
@@ -18,14 +18,14 @@ class WXZ_Validator {
 
 	public function __construct() {
 		// Create a validator.
-		$this->jsonValidator = new Validator();
-		$resolver = $this->jsonValidator->resolver();
+		$this->json_validator = new Validator();
+		$resolver             = $this->json_validator->resolver();
 
 		// Override the schema namespaces to load them locally.
 		$resolver->registerPrefix( 'https://wordpress.org/schema/', __DIR__ . '/../schema' );
 
 		// Create an error formatter.
-		$this->errorFormatter = new ErrorFormatter();
+		$this->error_formatter = new ErrorFormatter();
 
 	}
 
@@ -63,7 +63,7 @@ class WXZ_Validator {
 		}
 
 		fseek( $f, 38 );
-		if ( $this->mimetype !== fread( $f, strlen( $this->mimetype ) ) ) {
+		if ( fread( $f, strlen( $this->mimetype ) ) === $this->mimetype ) {
 			$this->raise_error( 'first-file-not-mimetype', $zip_filename . ': The file mimetype must only contain "' . $this->mimetype . '".' );
 			return false;
 		}
@@ -72,15 +72,15 @@ class WXZ_Validator {
 	}
 
 	public function validate( $zip_filename ) {
-		$this->errors = 0;
+		$this->errors   = 0;
 		$this->warnings = 0;
-		$this->counter = array();
+		$this->counter  = array();
 
 		if ( ! $this->verify_file_is_valid( $zip_filename ) ) {
 			return false;
 		}
 
-		$archive = new PclZip( $zip_filename );
+		$archive      = new PclZip( $zip_filename );
 		$zip_filename = basename( $zip_filename );
 		if ( ! $archive ) {
 			$this->raise_error( 'zip-library', $zip_filename . ': Error loading zip library.' );
@@ -138,7 +138,7 @@ class WXZ_Validator {
 			$schema = $this->schemas[ $type ];
 
 			try {
-				$result = $this->jsonValidator->validate( $item, $schema );
+				$result = $this->json_validator->validate( $item, $schema );
 			} catch ( Exception $e ) {
 				$this->raise_warning( 'unknown-schema', $file_id . ': ' . $e->getMessage() );
 				continue;
@@ -152,7 +152,7 @@ class WXZ_Validator {
 				$this->raise_warning(
 					'unknown-schema',
 					$file_id . ': ' . json_encode(
-						$this->errorFormatter->format( $result->error(), true ),
+						$this->error_formatter->format( $result->error(), true ),
 						JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
 					)
 				);

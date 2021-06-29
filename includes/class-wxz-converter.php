@@ -53,11 +53,11 @@ class WXZ_Converter {
 
 		$config = array();
 		foreach ( array(
-			'/rss/channel/title' => 'title',
-			'/rss/channel/link' => 'link',
+			'/rss/channel/title'       => 'title',
+			'/rss/channel/link'        => 'link',
 			'/rss/channel/description' => 'description',
-			'/rss/channel/pubDate' => 'date',
-			'/rss/channel/language' => 'language',
+			'/rss/channel/pubDate'     => 'date',
+			'/rss/channel/language'    => 'language',
 		) as $xpath => $key ) {
 			$val = $xml->xpath( $xpath );
 			if ( ! $val ) {
@@ -73,25 +73,25 @@ class WXZ_Converter {
 
 		// grab authors
 		foreach ( $xml->xpath( '/rss/channel/wp:author' ) as $author_arr ) {
-			$a                 = $author_arr->children( $namespaces['wp'] );
-			$login             = (string) $a->author_login;
-			$authors[ $login ] = array(
+			$a      = $author_arr->children( $namespaces['wp'] );
+			$login  = (string) $a->author_login;
+			$author = array(
 				'version'      => 1,
 				'login'        => $login,
 				'email'        => (string) $a->author_email,
 				'display_name' => (string) $a->author_display_name,
 			);
-			$this->add_file( 'users/' . intval( $a->author_id ) . '.json', $this->json_encode( $authors[ $login ] ) );
+			$this->add_file( 'users/' . intval( $a->author_id ) . '.json', $this->json_encode( $author ) );
 		}
 
 		// grab cats, tags and terms
 		foreach ( $xml->xpath( '/rss/channel/wp:category' ) as $term_arr ) {
 			$t        = $term_arr->children( $namespaces['wp'] );
 			$category = array(
-				'version'      => 1,
+				'version'     => 1,
 				'nicename'    => (string) $t->category_nicename,
 				'parent'      => (string) $t->category_parent,
-				'slug'             => (string) $t->cat_name,
+				'slug'        => (string) $t->cat_name,
 				'description' => (string) $t->category_description,
 			);
 
@@ -108,7 +108,7 @@ class WXZ_Converter {
 		foreach ( $xml->xpath( '/rss/channel/wp:tag' ) as $term_arr ) {
 			$t   = $term_arr->children( $namespaces['wp'] );
 			$tag = array(
-				'version'      => 1,
+				'version'     => 1,
 				'slug'        => (string) $t->tag_slug,
 				'name'        => (string) $t->tag_name,
 				'description' => (string) $t->tag_description,
@@ -126,9 +126,9 @@ class WXZ_Converter {
 		foreach ( $xml->xpath( '/rss/channel/wp:term' ) as $term_arr ) {
 			$t    = $term_arr->children( $namespaces['wp'] );
 			$term = array(
-				'version'      => 1,
+				'version'     => 1,
 				'taxonomy'    => (string) $t->term_taxonomy,
-				'slug'             => (string) $t->term_slug,
+				'slug'        => (string) $t->term_slug,
 				'parent'      => (string) $t->term_parent,
 				'name'        => (string) $t->term_name,
 				'description' => (string) $t->term_description,
@@ -147,29 +147,29 @@ class WXZ_Converter {
 		// grab posts
 		foreach ( $xml->channel->item as $item ) {
 			$post = array(
-				'version'      => 1,
-				'title' => (string) $item->title,
-				'guid'       => (string) $item->guid,
+				'version' => 1,
+				'title'   => (string) $item->title,
+				'guid'    => (string) $item->guid,
 			);
 
-			$dc                  = $item->children( 'http://purl.org/dc/elements/1.1/' );
+			$dc             = $item->children( 'http://purl.org/dc/elements/1.1/' );
 			$post['author'] = (string) $dc->creator;
 
-			$content              = $item->children( 'http://purl.org/rss/1.0/modules/content/' );
-			$excerpt              = $item->children( $namespaces['excerpt'] );
+			$content         = $item->children( 'http://purl.org/rss/1.0/modules/content/' );
+			$excerpt         = $item->children( $namespaces['excerpt'] );
 			$post['content'] = (string) $content->encoded;
 			$post['excerpt'] = (string) $excerpt->encoded;
 
 			$wp                     = $item->children( $namespaces['wp'] );
-			$post['date']      = (string) $wp->post_date;
-			$post['date_utc']  = (string) $wp->post_date_gmt;
+			$post['date']           = (string) $wp->post_date;
+			$post['date_utc']       = (string) $wp->post_date_gmt;
 			$post['comment_status'] = (string) $wp->comment_status;
 			$post['ping_status']    = (string) $wp->ping_status;
-			$post['name']      = (string) $wp->post_name;
+			$post['name']           = (string) $wp->post_name;
 			$post['status']         = (string) $wp->status;
-			$post['parent']    = (int) $wp->post_parent;
+			$post['parent']         = (int) $wp->post_parent;
 			$post['menu_order']     = (int) $wp->menu_order;
-			$post['type']      = (string) $wp->post_type;
+			$post['type']           = (string) $wp->post_type;
 			$post['post_password']  = (string) $wp->post_password;
 			$post['is_sticky']      = (int) $wp->is_sticky;
 
@@ -196,31 +196,31 @@ class WXZ_Converter {
 			}
 
 			// foreach ( $wp->comment as $comment ) {
-			// 	$meta = array();
-			// 	if ( isset( $comment->commentmeta ) ) {
-			// 		foreach ( $comment->commentmeta as $m ) {
-			// 			$meta[] = array(
-			// 				'key'   => (string) $m->meta_key,
-			// 				'value' => (string) $m->meta_value,
-			// 			);
-			// 		}
-			// 	}
+			// $meta = array();
+			// if ( isset( $comment->commentmeta ) ) {
+			// foreach ( $comment->commentmeta as $m ) {
+			// $meta[] = array(
+			// 'key'   => (string) $m->meta_key,
+			// 'value' => (string) $m->meta_value,
+			// );
+			// }
+			// }
 
-			// 	$post['comments'][] = array(
-			// 		'comment_id'           => (int) $comment->comment_id,
-			// 		'comment_author'       => (string) $comment->comment_author,
-			// 		'comment_author_email' => (string) $comment->comment_author_email,
-			// 		'comment_author_IP'    => (string) $comment->comment_author_IP,
-			// 		'comment_author_url'   => (string) $comment->comment_author_url,
-			// 		'comment_date'         => (string) $comment->comment_date,
-			// 		'comment_date_gmt'     => (string) $comment->comment_date_gmt,
-			// 		'comment_content'      => (string) $comment->comment_content,
-			// 		'comment_approved'     => (string) $comment->comment_approved,
-			// 		'comment_type'         => (string) $comment->comment_type,
-			// 		'comment_parent'       => (string) $comment->comment_parent,
-			// 		'comment_user_id'      => (int) $comment->comment_user_id,
-			// 		'commentmeta'          => $meta,
-			// 	);
+			// $post['comments'][] = array(
+			// 'comment_id'           => (int) $comment->comment_id,
+			// 'comment_author'       => (string) $comment->comment_author,
+			// 'comment_author_email' => (string) $comment->comment_author_email,
+			// 'comment_author_IP'    => (string) $comment->comment_author_IP,
+			// 'comment_author_url'   => (string) $comment->comment_author_url,
+			// 'comment_date'         => (string) $comment->comment_date,
+			// 'comment_date_gmt'     => (string) $comment->comment_date_gmt,
+			// 'comment_content'      => (string) $comment->comment_content,
+			// 'comment_approved'     => (string) $comment->comment_approved,
+			// 'comment_type'         => (string) $comment->comment_type,
+			// 'comment_parent'       => (string) $comment->comment_parent,
+			// 'comment_user_id'      => (int) $comment->comment_user_id,
+			// 'commentmeta'          => $meta,
+			// );
 			// }
 
 			$this->add_file( 'posts/' . intval( $wp->post_id ) . '.json', $this->json_encode( $post ) );
@@ -235,12 +235,12 @@ class WXZ_Converter {
 
 	private function add_file( $filename, $content, $write_to_dir = false ) {
 		$this->filelist[] = array(
-			PCLZIP_ATT_FILE_NAME => $filename,
+			PCLZIP_ATT_FILE_NAME    => $filename,
 			PCLZIP_ATT_FILE_CONTENT => $content,
 		);
 
 		if ( $write_to_dir ) {
-			$dir = dirname( $filename );
+			$dir          = dirname( $filename );
 			$write_to_dir = rtrim( $write_to_dir, '/' ) . '/';
 			if ( ! file_exists( $write_to_dir . $dir ) ) {
 				mkdir( $write_to_dir . $dir, 0777, true );
@@ -257,9 +257,10 @@ class WXZ_Converter {
 		}
 
 		// This two-step approach is needed to save the mimetype file uncompressed.
-		$archive->create( array(
+		$archive->create(
+			array(
 				array(
-					PCLZIP_ATT_FILE_NAME => 'mimetype',
+					PCLZIP_ATT_FILE_NAME    => 'mimetype',
 					PCLZIP_ATT_FILE_CONTENT => 'application/vnd.wordpress.export+zip',
 				),
 			),
