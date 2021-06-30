@@ -143,19 +143,26 @@ class WXZ_Validator {
 				$this->raise_warning( 'unknown-schema', $file_id . ': ' . $e->getMessage() );
 				continue;
 			}
-			if ( $result->isValid() ) {
-				if ( ! isset( $this->counter[ $type ] ) ) {
-					$this->counter[ $type ] = 0;
-				}
-				$this->counter[ $type ] += 1;
-			} else {
+
+			if ( ! $result->isValid() ) {
 				$this->raise_warning(
-					'unknown-schema',
+					'schema-error',
 					$file_id . ': ' . json_encode(
 						$this->error_formatter->format( $result->error(), true ),
 						JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
 					)
 				);
+				continue;
+			}
+
+			if ( ! isset( $this->counter[ $type ] ) ) {
+				$this->counter[ $type ] = 0;
+			}
+			$this->counter[ $type ] += 1;
+
+			$id = intval( $name );
+			if ( ! isset( $item->id ) || $item->id !== $id ) {
+				$this->raise_warning( 'id-mismatch', $file_id . ': id in json (' . ( isset( $item->id ) ? $item->id : 'missing' ) . ') differs from filename.' );
 			}
 		}
 
