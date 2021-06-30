@@ -1,29 +1,59 @@
 {
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
 	"$id": "https://wordpress.org/schema/user.json",
+
+	"title": "A site user.",
+	"description": "An individual site user, which can be referenced by other objects (for example, posts) as being the author/owner of that object.",
+
 	"type": "object",
+
 	"properties": {
 		"version": {
+			"description": "The schema version that this user object adheres to.",
 			"type": "integer",
 			"const": 1
 		},
 		"id": {
-			"type": "integer"
+			"description": "The user ID. It must be a positive integer.",
+			"type": "integer",
+			"minimum": 1
 		},
 		"login": {
+			"description": "The login or username for this user.",
 			"type": "string"
 		},
 		"name": {
-			"type": "string"
+			"description": "A display name for the user.\nWhen set as an object, it can be split up into the first name, last name, and preferred display name.\nWhen set as a string, that string will be treated as the display name.",
+			"type": [ "string", "object" ],
+			"properties": {
+				"firstname": {
+					"type": "string"
+				},
+				"lastname": {
+					"type": "string"
+				},
+				"displayname": {
+					"type": "string"
+				}
+			},
+			"additionalProperties": false
 		},
 		"email": {
-			"type": "string"
+			"description": "The user's email address.",
+			"type": "string",
+			"format": "email"
 		},
 		"url": {
-			"type": "string"
+			"description": "The user's homepage URL.",
+			"type": "string",
+			"format": "uri"
 		},
 		"meta": {
+			"description": "An array of user ",
 			"$ref": "https://wordpress.org/schema/meta.json"
 		}
 	},
+
+	"additionalProperties": false,
 	"required": [ "version" ]
 }

@@ -1,0 +1,18 @@
+{
+	"version": 1,
+	"id": 2,
+	"login": "jane",
+	"name": {
+		"firstname": "Jane",
+		"lastname": "Doe",
+		"displayname": "Jane Doe"
+	},
+	"email": "jane@doe.blog",
+	"url": "https://doe.blog",
+	"meta": [
+		{
+			"key": "baz",
+			"value": "cat"
+		}
+	]
+}
