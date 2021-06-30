@@ -1,15 +1,25 @@
 {
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
 	"$id": "https://wordpress.org/schema/meta.json",
+
+	"title": "The meta data of an object.",
+	"description": "Some objects (for example, users and posts) can have meta data associated with them. For any of these objects, this is an array of key/value pairs.",
+
 	"type": "array",
 	"items": {
 		"type": "object",
 		"properties": {
 			"key": {
+				"description": "The key of a single metadata element.",
 				"type": "string"
 			},
 			"value": {
+				"description": "The value of a single metadata element.",
 				"type": "string"
-			}
+			},
+
+			"additionalProperties": false,
+			"required": [ "key", "value" ]
 		}
 	}
 }
