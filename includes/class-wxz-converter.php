@@ -77,6 +77,7 @@ class WXZ_Converter {
 			$login  = (string) $a->author_login;
 			$author = array(
 				'version'      => 1,
+				'id'           => intval( $a->author_id ),
 				'login'        => $login,
 				'email'        => (string) $a->author_email,
 				'display_name' => (string) $a->author_display_name,
@@ -84,11 +85,13 @@ class WXZ_Converter {
 			$this->add_file( 'users/' . intval( $a->author_id ) . '.json', $this->json_encode( $author ) );
 		}
 
+		$terms = array();
 		// grab cats, tags and terms
 		foreach ( $xml->xpath( '/rss/channel/wp:category' ) as $term_arr ) {
 			$t        = $term_arr->children( $namespaces['wp'] );
 			$category = array(
 				'version'     => 1,
+				'id'          => intval( $t->term_id ),
 				'nicename'    => (string) $t->category_nicename,
 				'parent'      => (string) $t->category_parent,
 				'slug'        => (string) $t->cat_name,
@@ -102,13 +105,14 @@ class WXZ_Converter {
 				);
 			}
 
-			$this->add_file( 'terms/' . intval( $t->term_id ) . '.json', $this->json_encode( $category ) );
+			$terms[] = $category;
 		}
 
 		foreach ( $xml->xpath( '/rss/channel/wp:tag' ) as $term_arr ) {
 			$t   = $term_arr->children( $namespaces['wp'] );
 			$tag = array(
 				'version'     => 1,
+				'id'          => intval( $t->term_id ),
 				'slug'        => (string) $t->tag_slug,
 				'name'        => (string) $t->tag_name,
 				'description' => (string) $t->tag_description,
@@ -120,13 +124,14 @@ class WXZ_Converter {
 					'value' => (string) $meta->meta_value,
 				);
 			}
-			$this->add_file( 'terms/' . intval( $t->term_id ) . '.json', $this->json_encode( $tag ) );
+			$terms[] = $tag;
 		}
 
 		foreach ( $xml->xpath( '/rss/channel/wp:term' ) as $term_arr ) {
 			$t    = $term_arr->children( $namespaces['wp'] );
 			$term = array(
 				'version'     => 1,
+				'id'          => intval( $t->term_id ),
 				'taxonomy'    => (string) $t->term_taxonomy,
 				'slug'        => (string) $t->term_slug,
 				'parent'      => (string) $t->term_parent,
@@ -141,7 +146,11 @@ class WXZ_Converter {
 				);
 			}
 
-			$this->add_file( 'terms/' . intval( $t->term_id ) . '.json', $this->json_encode( $term ) );
+			$terms[] = $term;
+		}
+
+		foreach ( $terms as $t ) {
+			$this->add_file( 'terms/' . intval( $t['id'] ) . '.json', $this->json_encode( $t ) );
 		}
 
 		// grab posts
@@ -161,6 +170,7 @@ class WXZ_Converter {
 			$post['excerpt'] = (string) $excerpt->encoded;
 
 			$wp                     = $item->children( $namespaces['wp'] );
+			$post['id']             = intval( $wp->post_id );
 			$post['date']           = (string) $wp->post_date;
 			$post['date_utc']       = (string) $wp->post_date_gmt;
 			$post['comment_status'] = (string) $wp->comment_status;
