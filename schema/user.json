@@ -49,7 +49,7 @@
 			"format": "uri"
 		},
 		"meta": {
-			"description": "An array of user ",
+			"description": "An array of user metadata.",
 			"$ref": "https://wordpress.org/schema/meta.json"
 		}
 	},
