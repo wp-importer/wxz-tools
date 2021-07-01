@@ -1,0 +1,21 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://wordpress.org/schema/content.json",
+
+	"title": "A content blob.",
+	"description": "",
+
+	"type": [ "string", "array" ],
+
+	"items": {
+		"type": "object",
+		"properties": {
+			"name": {
+				"type": "string"
+			}
+		}
+	},
+
+	"additionalProperties": false,
+	"required": [ "version" ]
+}

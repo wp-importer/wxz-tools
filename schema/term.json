@@ -1,0 +1,50 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://wordpress.org/schema/term.json",
+
+	"title": "A post object.",
+	"description": "",
+
+	"type": "object",
+
+	"properties": {
+		"version": {
+			"description": "The schema version that this post object adheres to.",
+			"type": "integer",
+			"const": 1
+		},
+		"id": {
+			"description": "The post ID. It must be a positive integer.",
+			"type": "integer",
+			"minimum": 1
+		},
+		"taxonomy": {
+			"description": "",
+			"type": "string"
+		},
+		"slug": {
+			"description": "",
+			"type": "string"
+		},
+		"parent": {
+			"description": "",
+			"type": "integer",
+			"minimum": 1
+		},
+		"name": {
+			"description": "",
+			"type": "string"
+		},
+		"description": {
+			"description": "",
+			"$ref": "https://wordpress.org/schema/content.json"
+		},
+		"meta": {
+			"description": "An array of post metadata.",
+			"$ref": "https://wordpress.org/schema/meta.json"
+		}
+	},
+
+	"additionalProperties": false,
+	"required": [ "version" ]
+}
