@@ -74,9 +74,13 @@ class WXZ_Converter {
 		$this->add_file( 'site/config.json', $this->json_encode( $config ), $write_to_dir );
 
 		// grab authors
+		$c = 0;
 		foreach ( $xml->xpath( '/rss/channel/wp:author' ) as $author_arr ) {
 			$a      = $author_arr->children( $namespaces['wp'] );
 			$login  = (string) $a->author_login;
+			if ( ! intval( $a->author_id ) ) {
+				$a->author_id = 1e6 + ( ++ $c );
+			}
 			$author = array(
 				'version'      => 1,
 				'id'           => intval( $a->author_id ),
@@ -156,6 +160,7 @@ class WXZ_Converter {
 		}
 
 		// grab posts
+		$c = 0;
 		foreach ( $xml->channel->item as $item ) {
 			$post = array(
 				'version' => 1,
@@ -172,6 +177,9 @@ class WXZ_Converter {
 			$post['excerpt'] = (string) $excerpt->encoded;
 
 			$wp                     = $item->children( $namespaces['wp'] );
+			if ( ! intval( $wp->post_id ) ) {
+				$wp->post_id = 1e6 + ( ++ $c );
+			}
 			$post['id']             = intval( $wp->post_id );
 			$post['date']           = (string) $wp->post_date;
 			$post['date_utc']       = (string) $wp->post_date_gmt;
