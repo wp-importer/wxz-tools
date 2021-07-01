@@ -4,7 +4,9 @@ class WXZ_Converter {
 	public $filelist = array();
 
 	private function json_encode( $json ) {
-		return json_encode( $json, JSON_PRETTY_PRINT );
+		return json_encode( array_filter( $json, function( $el ) {
+			return $el !== '';
+		} ), JSON_PRETTY_PRINT );
 	}
 
 	public function convert_wxr( $file ) {
