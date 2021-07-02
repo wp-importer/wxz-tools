@@ -12,7 +12,7 @@ class WXZ_Validator {
 	private $mimetype = 'application/vnd.WordPress.export+zip';
 
 	// Maps the files in the directories to the schema.
-	private $schemas = array(
+	public static $schemas = array(
 		'users' => 'https://wordpress.org/schema/user.json',
 	);
 
@@ -127,7 +127,7 @@ class WXZ_Validator {
 				}
 			}
 
-			if ( ! isset( $this->schemas[ $type ] ) ) {
+			if ( ! isset( self::$schemas[ $type ] ) ) {
 				if ( ! isset( $schema_warned[ $type ] ) ) {
 					$this->raise_warning( 'unknown-schema', $file_id . ': Unknown schema for "' . $type . '".' );
 					$schema_warned[ $type ] = true;
@@ -135,7 +135,7 @@ class WXZ_Validator {
 				continue;
 			}
 
-			$schema = $this->schemas[ $type ];
+			$schema = self::$schemas[ $type ];
 
 			try {
 				$result = $this->json_validator->validate( $item, $schema );
