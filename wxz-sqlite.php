@@ -28,8 +28,8 @@ foreach ( $_SERVER['argv'] as $filename ) {
 			$stmt = $db_file->prepare( $insert );
 
 			foreach ( $item as $key => $value ) {
-				$stmt->bindParam( ':name', $key, PDO::PARAM_STR );
-				$stmt->bindParam( ':value', $value, PDO::PARAM_STR );
+				$stmt->bindValue( ':name', $key, PDO::PARAM_STR );
+				$stmt->bindValue( ':value', $value, PDO::PARAM_STR );
 				$stmt->execute();
 			}
 			continue;
@@ -49,7 +49,7 @@ foreach ( $_SERVER['argv'] as $filename ) {
 				}
 				$sql .= $t . $key . ' ';
 				switch ( $schema->properties->$key->type ) {
-					case 'string': $sql.= 'varchar'; break;
+					case 'string': $sql.= 'text'; break;
 					default: $sql .=  $schema->properties->$key->type;
 				}
 
@@ -70,11 +70,11 @@ foreach ( $_SERVER['argv'] as $filename ) {
 			foreach ( $item as $key => $val ) {
 				if ( isset( $schema->properties->$key->type ) ) {
 					switch ( $schema->properties->$key->type ) {
-						case 'string': $param = PDO::PARAM_STR; break;
-						case 'integer': $param = PDO::PARAM_INT; break;
-						case 'bool': $param = PDO::PARAM_BOOL; break;
+						case 'string': $param = SQLITE3_TEXT; break;
+						case 'integer': $param = SQLITE3_INTEGER; break;
+						case 'bool': $param = SQLITE3_INTEGER; break;
 					}
-					$stmt->bindParam( ':' . $key, $val, $param );
+					$stmt->bindValue( ':' . $key, $val, $param );
 				}
 			}
 			$stmt->execute();
