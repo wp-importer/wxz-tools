@@ -19,37 +19,38 @@
 			"minimum": 1
 		},
 		"title": {
-			"description": "",
+			"description": "The title of the post.",
 			"type": "string"
 		},
 		"slug": {
-			"description": "",
+			"description": "The URL slug that refers to this post.",
 			"type": "string"
 		},
 		"author": {
-			"description": "",
+			"description": "The user ID of the author of this post.",
 			"type": "integer",
 			"minimum": 1
 		},
 		"type": {
-			"description": "",
+			"description": "The post type: 'post', 'page', and 'attachment' are valid post types on any WordPress site, other post types may require a corresponding plugin to import correctly.",
 			"type": "string"
 		},
 		"postStatus": {
-			"description": "",
+			"description": "The publication status of the post. Will almost certainly be one of 'publish', 'pending', 'draft', 'auto-draft', 'future', 'private', 'inherit', or 'trash'.",
 			"type": "string"
 		},
 		"published": {
-			"description": "",
+			"description": "The timestamp of when this post was published, in UTC.",
 			"type": "string",
 			"format": "date-time"
 		},
 		"modified": {
-			"description": "",
+			"description": "The timestamp of when this post was last modified, in UTC.",
 			"type": "string",
 			"format": "date-time"
 		},
 		"terms": {
+			"description": "An array of term IDs that apply to this post.",
 			"type": "array",
 			"items": {
 				"type": "number",
@@ -57,41 +58,49 @@
 			}
 		},
 		"parent": {
-			"description": "",
+			"description": "The post ID of this post's parent, or 0 if it doesn't have a parent.",
 			"type": "integer",
-			"minimum": 1
+			"minimum": 0
 		},
 		"password": {
-			"description": "",
+			"description": "The password for this post. Note that this password is not used in a cryptographically secure manner, and will be stored in plain text.",
 			"type": "string"
 		},
 		"menuOrder": {
-			"description": "",
+			"description": "An ordering value to determine where in an auto-generated menu this post will appear in relation to its siblings.",
 			"type": "integer"
 		},
 		"sticky": {
-			"description": "",
+			"description": "Whether this post should 'stick' to the top of the post list.",
 			"type": "boolean"
 		},
 		"commentsOpen": {
-			"description": "",
+			"description": "Flag whether or not comments are open on this post.",
 			"type": "boolean"
 		},
 		"pingsOpen": {
-			"description": "",
+			"description": "Flag whether or not this post accepts pingbacks.",
 			"type": "boolean"
 		},
 		"content": {
-			"description": "",
+			"description": "The content of the post. It can be stored as a string (eg, of HTML), or as an array of block objects.",
 			"$ref": "https://wordpress.org/schema/content.json"
 		},
 		"excerpt": {
-			"description": "",
+			"description": "The excerpt of the post. It can be stored as a string (eg, of HTML), or as an array of block objects.",
 			"$ref": "https://wordpress.org/schema/content.json"
 		},
-		"attachmentUrl": {
-			"description": "",
-			"type": "string"
+
+		"if": {
+			"properties": { "type": { "const": "attachment" } }
+		},
+		"then": {
+			"properties": {
+				"attachmentUrl": {
+					"description": "When the post type is an attachment, this must be set to the URL of where the attachment file can be found.",
+					"type": "string"
+				}
+			}
 		},
 
 
