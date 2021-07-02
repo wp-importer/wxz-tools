@@ -6,6 +6,7 @@
 		"classmap": [
 			"includes/class-wp-error.php",
 			"includes/class-wxz-converter.php",
+			"includes/class-wxz-reader.php",
 			"includes/class-wxz-validator.php"
 		]
 	},
