@@ -34,15 +34,15 @@ class WXZ_SQLite {
 
 	public function create_tables( $schemas, $dir ) {
 		$this->db->exec( 'CREATE TABLE IF NOT EXISTS config (
-			id INTEGER PRIMARY KEY,
-			name TEXT,
-			value TEXT
-		)' );
+	id INTEGER PRIMARY KEY,
+	name TEXT,
+	value TEXT
+)' );
 
 		$this->db->exec( 'CREATE TABLE IF NOT EXISTS content (
-			id INTEGER PRIMARY KEY,
-			name TEXT
-		)' );
+	id INTEGER PRIMARY KEY,
+	name TEXT
+)' );
 
 		// Create tables according to schemas.
 		foreach ( $schemas as $type => $json_schema_url ) {
@@ -58,6 +58,10 @@ class WXZ_SQLite {
 				if ( ! isset( $spec->type ) ) {
 					continue;
 				}
+				if ( 'version' === $key ) {
+					unset( $this->schemas[ $type ]->properties->$key );
+					continue;
+				}
 				if ( 'array' === $spec->type && 'terms' === $key ) {
 					$keys[ $key ] = 'array';
 					// Will be created below.
@@ -70,11 +74,13 @@ class WXZ_SQLite {
 				}
 				if ( 'array' === $spec->type && 'content' === $key ) {
 					continue;
-					// Will be created below.
-					continue;
 				}
 				if ( is_array( $this->schemas[ $type ]->properties->$key->type ) ) {
 					if ( isset( $this->schemas[ $type ]->properties->$key->properties ) ) {
+						if ( 'then' !== $key ) {
+							$create_table[] = $key . ' ' . $this->get_sqlite_field_type( $this->schemas[ $type ]->properties->$key->type[0] );
+							$keys[ $key ] = $this->schemas[ $type ]->properties->$key->type[0];
+						}
 						foreach ( $this->schemas[ $type ]->properties->$key->properties as $property => $data ) {
 							if ( 'then' === $key ) {
 								$create_table[] = $property . ' ' . $this->get_sqlite_field_type( $data->type );
@@ -85,7 +91,7 @@ class WXZ_SQLite {
 							}
 						}
 					} elseif ( isset( $this->schemas[ $type ]->properties->$key->items ) ) {
-						// content
+						// TODO: link content rows.
 					}
 				} elseif ( 'id' === $key ) {
 					$create_table[] = 'id INTEGER PRIMARY KEY';
@@ -96,25 +102,25 @@ class WXZ_SQLite {
 				}
 			}
 
-			$this->db->exec( 'CREATE TABLE IF NOT EXISTS ' . $type . ' (' . implode( ', ', $create_table ) . ')' );
+			$this->db->exec( 'CREATE TABLE IF NOT EXISTS ' . $type . ' (' . PHP_EOL . "\t". trim( implode( ',' . PHP_EOL . "\t", $create_table ) ) . PHP_EOL . ')' );
 			$this->tables[ $type ] = $keys;
 
 			if ( isset( $keys['meta'] ) ) {
 				$this->db->exec( 'CREATE TABLE IF NOT EXISTS ' . $type . '_meta (
-					id INTEGER PRIMARY KEY,
-					' . rtrim( $type, 's' ) . '_id INTEGER REFERENCES ' . $type . '( id ),
-					`key` TEXT,
-					value TEXT
-				)' );
+	id INTEGER PRIMARY KEY,
+	' . rtrim( $type, 's' ) . '_id INTEGER REFERENCES ' . $type . '( id ),
+	`key` TEXT,
+	value TEXT
+)' );
 			}
 		}
 
 		$this->db->exec( 'CREATE TABLE IF NOT EXISTS posts_terms (
-			id INTEGER PRIMARY KEY,
-			post_id INTEGER REFERENCES posts( id ),
-			term_id INTEGER REFERENCES terms( id ),
-			UNIQUE( post_id, term_id ) ON CONFLICT REPLACE
-		)' );
+	id INTEGER PRIMARY KEY,
+	post_id INTEGER REFERENCES posts( id ),
+	term_id INTEGER REFERENCES terms( id ),
+	UNIQUE( post_id, term_id ) ON CONFLICT REPLACE
+)' );
 
 
 	}
