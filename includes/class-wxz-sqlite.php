@@ -2,7 +2,6 @@
 
 class WXZ_SQLite {
 	private $db;
-	private $tables = array();
 	private $schemas = array();
 	public function __construct( $filename ) {
 		$this->db = new PDO( 'sqlite:' . $filename );
@@ -47,9 +46,12 @@ class WXZ_SQLite {
 		// Create tables according to schemas.
 		foreach ( $schemas as $type => $json_schema_url ) {
 			$this->schemas[ $type ] = json_decode( file_get_contents( $dir . str_replace( 'https://wordpress.org', '', $json_schema_url ) ) );
-			$create_table  = array();
 
-			$keys = array();
+			// Holds the fields for the CREATE TABLE statement.
+			$create_table  = array();
+			$create_posts_terms_table = false;
+			$create_meta_table = false;
+
 			foreach ( $this->schemas[ $type ]->properties as $key => $spec ) {
 				if ( isset( $spec->{'$ref'} ) ) {
 					$spec = json_decode( file_get_contents( $dir . str_replace( 'https://wordpress.org', '', $spec->{'$ref'} ) ) );
@@ -58,36 +60,50 @@ class WXZ_SQLite {
 				if ( ! isset( $spec->type ) ) {
 					continue;
 				}
+
+				// Version from the JSON file doesn't need to be carried over.
 				if ( 'version' === $key ) {
 					unset( $this->schemas[ $type ]->properties->$key );
 					continue;
 				}
+
+				// Special treatment for posts_terms table below.
 				if ( 'array' === $spec->type && 'terms' === $key ) {
-					$keys[ $key ] = 'array';
-					// Will be created below.
+					$create_posts_terms_table = 'CREATE TABLE IF NOT EXISTS posts_terms (
+	id INTEGER PRIMARY KEY,
+	post_id INTEGER REFERENCES posts( id ),
+	term_id INTEGER REFERENCES terms( id ),
+	UNIQUE( post_id, term_id ) ON CONFLICT REPLACE
+)';
 					continue;
 				}
+
+				// Special treatment for meta tables below.
 				if ( 'array' === $spec->type && 'meta' === $key ) {
-					$keys[ $key ] = 'array';
-					// Will be created below.
+					$create_meta_table = 'CREATE TABLE IF NOT EXISTS ' . $type . '_meta (
+	id INTEGER PRIMARY KEY,
+	' . rtrim( $type, 's' ) . '_id INTEGER REFERENCES ' . $type . '( id ),
+	`key` TEXT,
+	value TEXT
+)';
 					continue;
 				}
-				if ( 'array' === $spec->type && 'content' === $key ) {
-					continue;
-				}
+
+				// There is the option for a field to have multiple types.
 				if ( is_array( $this->schemas[ $type ]->properties->$key->type ) ) {
+
+					// In case one of the types is an object or a condition.
 					if ( isset( $this->schemas[ $type ]->properties->$key->properties ) ) {
 						if ( 'then' !== $key ) {
 							$create_table[] = $key . ' ' . $this->get_sqlite_field_type( $this->schemas[ $type ]->properties->$key->type[0] );
-							$keys[ $key ] = $this->schemas[ $type ]->properties->$key->type[0];
 						}
 						foreach ( $this->schemas[ $type ]->properties->$key->properties as $property => $data ) {
 							if ( 'then' === $key ) {
+								// Even if it's just a condition, we'll want to create the column.
 								$create_table[] = $property . ' ' . $this->get_sqlite_field_type( $data->type );
-								$keys[ $property ] = $data->type;
 							} else {
+								// Sub-properties are stored with keys of the form key_subkey.
 								$create_table[] = $key . '_' . $property . ' ' . $this->get_sqlite_field_type( $data->type );
-								$keys[ $key . '_' . $property ] = $data->type;
 							}
 						}
 					} elseif ( isset( $this->schemas[ $type ]->properties->$key->items ) ) {
@@ -95,33 +111,22 @@ class WXZ_SQLite {
 					}
 				} elseif ( 'id' === $key ) {
 					$create_table[] = 'id INTEGER PRIMARY KEY';
-					$keys[ $key ] = 'integer';
 				} else {
+					//
 					$create_table[] = $key . ' ' . $this->get_sqlite_field_type( $this->schemas[ $type ]->properties->$key->type );
-					$keys[ $key ] = 'integer';
 				}
 			}
 
 			$this->db->exec( 'CREATE TABLE IF NOT EXISTS ' . $type . ' (' . PHP_EOL . "\t". trim( implode( ',' . PHP_EOL . "\t", $create_table ) ) . PHP_EOL . ')' );
-			$this->tables[ $type ] = $keys;
 
-			if ( isset( $keys['meta'] ) ) {
-				$this->db->exec( 'CREATE TABLE IF NOT EXISTS ' . $type . '_meta (
-	id INTEGER PRIMARY KEY,
-	' . rtrim( $type, 's' ) . '_id INTEGER REFERENCES ' . $type . '( id ),
-	`key` TEXT,
-	value TEXT
-)' );
+			if ( $create_meta_table ) {
+				$this->db->exec( $create_meta_table );
 			}
 		}
 
-		$this->db->exec( 'CREATE TABLE IF NOT EXISTS posts_terms (
-	id INTEGER PRIMARY KEY,
-	post_id INTEGER REFERENCES posts( id ),
-	term_id INTEGER REFERENCES terms( id ),
-	UNIQUE( post_id, term_id ) ON CONFLICT REPLACE
-)' );
-
+		if ( $create_posts_terms_table ) {
+			$this->db->exec( $create_posts_terms_table );
+		}
 
 	}
 
@@ -162,22 +167,33 @@ class WXZ_SQLite {
 			if ( ! isset( $spec->type ) ) {
 				continue;
 			}
+
 			if ( 'array' === $spec->type && 'terms' === $key && isset( $data->$key ) ) {
 				$this->insert_post_terms( $data->id, $data->$key );
 				unset( $data->$key );
 				continue;
 			}
+
 			if ( 'array' === $spec->type && 'meta' === $key && isset( $data->$key ) ) {
 				$this->insert_meta( $type, $data->id, $data->$key );
 				unset( $data->$key );
 				continue;
 			}
+
+			// The particular JSON doesn't include this column from the schema.
 			if ( ! isset( $data->$key ) ) {
 				continue;
 			}
+
+			// Handle multiple possible types.
 			if ( is_array( $this->schemas[ $type ]->properties->$key->type ) ) {
 				if ( isset( $this->schemas[ $type ]->properties->$key->properties ) ) {
+
+					// Try to copy each defined property into the insert data.
 					foreach ( $this->schemas[ $type ]->properties->$key->properties as $property => $data ) {
+						if ( ! isset( $data->$type->$property ) ) {
+							continue;
+						}
 						if ( 'then' === $key ) {
 							$insert_data[ $property ] = $data->$type->$property;
 						} else {
@@ -192,6 +208,7 @@ class WXZ_SQLite {
 			}
 		}
 
+		// Now that all data has been collected, we can just insert it.
 		$stmt = $this->db->prepare( 'INSERT OR IGNORE INTO ' . $type . '(' . implode( ', ', array_keys( $insert_data ) ) . ') VALUES (:' . implode( ', :', array_keys( $insert_data ) ) . ')' );
 
 		foreach ( $insert_data as $key => $value ) {
