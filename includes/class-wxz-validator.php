@@ -13,9 +13,10 @@ class WXZ_Validator {
 
 	// Maps the files in the directories to the schema.
 	public static $schemas = array(
-		'users' => 'https://wordpress.org/schema/user.json',
-		'terms' => 'https://wordpress.org/schema/term.json',
-		'posts' => 'https://wordpress.org/schema/post.json',
+		'users'    => 'https://wordpress.org/schema/user.json',
+		'terms'    => 'https://wordpress.org/schema/term.json',
+		'posts'    => 'https://wordpress.org/schema/post.json',
+		'comments' => 'https://wordpress.org/schema/comment.json',
 	);
 
 	public function __construct() {

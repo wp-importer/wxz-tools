@@ -46,5 +46,5 @@
 	},
 
 	"additionalProperties": false,
-	"required": [ "version" ]
+	"required": [ "version", "taxonomy" ]
 }

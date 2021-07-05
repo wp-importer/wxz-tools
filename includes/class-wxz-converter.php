@@ -3,10 +3,27 @@
 class WXZ_Converter {
 	public $filelist = array();
 
-	private function json_encode( $json ) {
-		return json_encode( array_filter( $json, function( $el ) {
-			return $el !== '' && $el !== 0;
-		} ), JSON_PRETTY_PRINT );
+	private function remove_empty_elements( $array ) {
+		return array_filter(
+			array_map(
+				function( $el ) {
+					if ( is_array( $el ) ) {
+						return $this->remove_empty_elements( $el );
+					}
+
+					if ( '' !== $el && 0 !== $el ) {
+						return $el;
+					}
+
+					return false;
+				},
+				$array
+			)
+		);
+	}
+
+	private function json_encode( $data ) {
+		return json_encode( $this->remove_empty_elements( $data ), JSON_PRETTY_PRINT );
 	}
 
 	public function convert_wxr( $file ) {
@@ -84,11 +101,11 @@ class WXZ_Converter {
 				$a->author_id = 1e6 + ( ++ $c );
 			}
 			$author = array(
-				'version'      => 1,
-				'id'           => intval( $a->author_id ),
-				'login'        => $login,
-				'email'        => (string) $a->author_email,
-				'display_name' => (string) $a->author_display_name,
+				'version' => 1,
+				'id'      => intval( $a->author_id ),
+				'login'   => $login,
+				'email'   => (string) $a->author_email,
+				'name'    => (string) $a->author_display_name,
 			);
 			$author_lookup[ $author['login'] ] = $author['id'];
 			if ( ! $fallback_author ) {
@@ -105,8 +122,9 @@ class WXZ_Converter {
 			$category = array(
 				'version'     => 1,
 				'id'          => intval( $t->term_id ),
-				'nicename'    => (string) $t->category_nicename,
-				'parent'      => (string) $t->category_parent,
+				'taxonomy'    => 'category',
+				'name'        => (string) $t->category_nicename,
+				'parent'      => (int) $t->category_parent,
 				'slug'        => (string) $t->cat_name,
 				'description' => (string) $t->category_description,
 			);
@@ -127,6 +145,7 @@ class WXZ_Converter {
 			$tag = array(
 				'version'     => 1,
 				'id'          => intval( $t->term_id ),
+				'taxonomy'    => 'tag',
 				'slug'        => (string) $t->tag_slug,
 				'name'        => (string) $t->tag_name,
 				'description' => (string) $t->tag_description,
@@ -194,9 +213,9 @@ class WXZ_Converter {
 				$wp->post_id = 1e6 + ( ++ $c );
 			}
 			$post['id']             = intval( $wp->post_id );
-			$post['published']      = (string) $wp->post_date_gmt;
-			$post['pingStatus']    = (string) $wp->ping_status;
-			$post['name']           = (string) $wp->post_name;
+			$post['published']      = $this->format_date( $wp->post_date_gmt );
+			$post['pingsOpen']    = (boolean) $wp->ping_status;
+			$post['slug']           = (string) $wp->post_name;
 			$post['postStatus']         = (string) $wp->status;
 			$post['parent']         = (int) $wp->post_parent;
 			$post['menuOrder']     = (int) $wp->menu_order;
@@ -222,33 +241,43 @@ class WXZ_Converter {
 				);
 			}
 
-			// foreach ( $wp->comment as $comment ) {
-			// $meta = array();
-			// if ( isset( $comment->commentmeta ) ) {
-			// foreach ( $comment->commentmeta as $m ) {
-			// $meta[] = array(
-			// 'key'   => (string) $m->meta_key,
-			// 'value' => (string) $m->meta_value,
-			// );
-			// }
-			// }
+			foreach ( $wp->comment as $wp_comment ) {
+				$meta = array();
+				if ( isset( $wp_comment->commentmeta ) ) {
+					foreach ( $wp_comment->commentmeta as $m ) {
+						$meta[] = array(
+							'key'   => (string) $m->meta_key,
+							'value' => (string) $m->meta_value,
+						);
+					}
+				}
 
-			// $post['comments'][] = array(
-			// 'comment_id'           => (int) $comment->comment_id,
-			// 'comment_author'       => (string) $comment->comment_author,
-			// 'comment_author_email' => (string) $comment->comment_author_email,
-			// 'comment_author_IP'    => (string) $comment->comment_author_IP,
-			// 'comment_author_url'   => (string) $comment->comment_author_url,
-			// 'comment_date'         => (string) $comment->comment_date,
-			// 'comment_date_gmt'     => (string) $comment->comment_date_gmt,
-			// 'comment_content'      => (string) $comment->comment_content,
-			// 'comment_approved'     => (string) $comment->comment_approved,
-			// 'comment_type'         => (string) $comment->comment_type,
-			// 'comment_parent'       => (string) $comment->comment_parent,
-			// 'comment_user_id'      => (int) $comment->comment_user_id,
-			// 'commentmeta'          => $meta,
-			// );
-			// }
+				$comment = array(
+					'version'     => 1,
+					'id'          => (int) $wp_comment->comment_id,
+					'author'      => array(
+						'id'    => (int) $wp_comment->comment_user_id,
+						'name'  => (string) $wp_comment->comment_author,
+						'email' => (string) $wp_comment->comment_author_email,
+						'url'   => (string) $wp_comment->comment_author_url,
+						'IP'    => (string) $wp_comment->comment_author_IP,
+					),
+					'published'   => $this->format_date( $wp_comment->comment_date_gmt ) ,
+					'content'     => (string) $wp_comment->comment_content,
+					'type'        => (string) $wp_comment->comment_type,
+					'parent'      => (int) $wp_comment->comment_parent,
+					'post'        => $post['id'],
+					'commentmeta' => $meta,
+				);
+
+				if ( 'spam' === $wp_comment->comment_approved ) {
+					$comment['approved'] = 'spam';
+				} else {
+					$comment['approved'] = (bool) $wp_comment->comment_approved;
+				}
+
+				$this->add_file( 'comments/' . $comment['id'] . '.json', $this->json_encode( $comment ) );
+			}
 
 			$this->add_file( 'posts/' . intval( $wp->post_id ) . '.json', $this->json_encode( $post ) );
 		}
@@ -302,5 +331,23 @@ class WXZ_Converter {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Stripped down version of WordPress' mysql2date() and mysql_to_rfc3339() functions,
+	 * converting the MySQL-style timestamps in a WXR to the RFC3339 format.
+	 */
+	private function format_date( $date ) {
+		if ( empty( $date ) ) {
+			return '';
+		}
+
+		$datetime = date_create( $date, new DateTimeZone( 'UTC' ) );
+
+		if ( false === $datetime ) {
+			return '';
+		}
+
+		return $datetime->format( 'Y-m-d\TH:i:s' );
 	}
 }
