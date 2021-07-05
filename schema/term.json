@@ -3,7 +3,7 @@
 	"$id": "https://wordpress.org/schema/term.json",
 
 	"title": "A term object.",
-	"description": "",
+	"description": "An individual term. Terms are generally used for categorising and grouping posts.",
 
 	"type": "object",
 
@@ -19,24 +19,24 @@
 			"minimum": 1
 		},
 		"taxonomy": {
-			"description": "",
+			"description": "The type of term this is. WordPress defines two default taxonomies: 'tag', and 'category'. Any other taxonomy would need to be defined by a plugin.",
 			"type": "string"
 		},
 		"slug": {
-			"description": "",
+			"description": "The URL slug that refers to this term.",
 			"type": "string"
 		},
 		"parent": {
-			"description": "",
+			"description": "The ID of the parent term for this term, or 0 if it doesn't have a parent.",
 			"type": "integer",
-			"minimum": 1
+			"minimum": 0
 		},
 		"name": {
-			"description": "",
+			"description": "The display name of this term.",
 			"type": "string"
 		},
 		"description": {
-			"description": "",
+			"description": "The long-form description of the this term. It can be stored as a string (eg, of HTML), or as an array of block objects.",
 			"$ref": "https://wordpress.org/schema/content.json"
 		},
 		"meta": {

@@ -3,7 +3,7 @@
 	"$id": "https://wordpress.org/schema/post.json",
 
 	"title": "A post object.",
-	"description": "",
+	"description": "A single post.",
 
 	"type": "object",
 

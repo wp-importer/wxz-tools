@@ -3,7 +3,7 @@
 	"$id": "https://wordpress.org/schema/content.json",
 
 	"title": "A content blob.",
-	"description": "",
+	"description": "This is the generic form of long form content. It can be stored in two ways:\n- As a string, usually as HTML, but can be any string-encoded data (for example, a custom post type may store JSON-encoded data as in the post content).\n- As an array of block objects.",
 
 	"type": [ "string", "array" ],
 
@@ -11,11 +11,9 @@
 		"type": "object",
 		"properties": {
 			"name": {
+				"description": "While the name is the only property that must be defined on a block, there will usually be others specific to that block.",
 				"type": "string"
 			}
 		}
-	},
-
-	"additionalProperties": false,
-	"required": [ "version" ]
+	}
 }
