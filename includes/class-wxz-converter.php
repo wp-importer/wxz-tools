@@ -5,7 +5,7 @@ class WXZ_Converter {
 
 	private function json_encode( $json ) {
 		return json_encode( array_filter( $json, function( $el ) {
-			return $el !== '';
+			return $el !== '' && $el !== 0;
 		} ), JSON_PRETTY_PRINT );
 	}
 
@@ -75,6 +75,8 @@ class WXZ_Converter {
 
 		// grab authors
 		$c = 0;
+		$author_lookup = array();
+		$fallback_author = false;
 		foreach ( $xml->xpath( '/rss/channel/wp:author' ) as $author_arr ) {
 			$a      = $author_arr->children( $namespaces['wp'] );
 			$login  = (string) $a->author_login;
@@ -88,10 +90,15 @@ class WXZ_Converter {
 				'email'        => (string) $a->author_email,
 				'display_name' => (string) $a->author_display_name,
 			);
+			$author_lookup[ $author['login'] ] = $author['id'];
+			if ( ! $fallback_author ) {
+				$fallback_author = $author['id'];
+			}
 			$this->add_file( 'users/' . intval( $a->author_id ) . '.json', $this->json_encode( $author ) );
 		}
 
 		$terms = array();
+		$term_lookup = array();
 		// grab cats, tags and terms
 		foreach ( $xml->xpath( '/rss/channel/wp:category' ) as $term_arr ) {
 			$t        = $term_arr->children( $namespaces['wp'] );
@@ -103,6 +110,7 @@ class WXZ_Converter {
 				'slug'        => (string) $t->cat_name,
 				'description' => (string) $t->category_description,
 			);
+			$term_lookup[ $category['slug'] ] = $category['id'];
 
 			foreach ( $t->termmeta as $meta ) {
 				$category['termmeta'][] = array(
@@ -123,6 +131,7 @@ class WXZ_Converter {
 				'name'        => (string) $t->tag_name,
 				'description' => (string) $t->tag_description,
 			);
+			$term_lookup[ $tag['slug'] ] = $tag['id'];
 
 			foreach ( $t->termmeta as $meta ) {
 				$tag['termmeta'][] = array(
@@ -144,6 +153,7 @@ class WXZ_Converter {
 				'name'        => (string) $t->term_name,
 				'description' => (string) $t->term_description,
 			);
+			$term_lookup[ $term['slug'] ] = $term['id'];
 
 			foreach ( $t->termmeta as $meta ) {
 				$term['termmeta'][] = array(
@@ -165,11 +175,14 @@ class WXZ_Converter {
 			$post = array(
 				'version' => 1,
 				'title'   => (string) $item->title,
-				'guid'    => (string) $item->guid,
 			);
 
 			$dc             = $item->children( 'http://purl.org/dc/elements/1.1/' );
-			$post['author'] = (string) $dc->creator;
+			if ( isset( $author_lookup[(string) $dc->creator] ) ) {
+				$post['author'] = $author_lookup[(string) $dc->creator];
+			} else {
+				$post['author'] = $fallback_author;
+			}
 
 			$content         = $item->children( 'http://purl.org/rss/1.0/modules/content/' );
 			$excerpt         = $item->children( $namespaces['excerpt'] );
@@ -181,35 +194,29 @@ class WXZ_Converter {
 				$wp->post_id = 1e6 + ( ++ $c );
 			}
 			$post['id']             = intval( $wp->post_id );
-			$post['date']           = (string) $wp->post_date;
-			$post['date_utc']       = (string) $wp->post_date_gmt;
-			$post['comment_status'] = (string) $wp->comment_status;
-			$post['ping_status']    = (string) $wp->ping_status;
+			$post['published']      = (string) $wp->post_date_gmt;
+			$post['pingStatus']    = (string) $wp->ping_status;
 			$post['name']           = (string) $wp->post_name;
-			$post['status']         = (string) $wp->status;
+			$post['postStatus']         = (string) $wp->status;
 			$post['parent']         = (int) $wp->post_parent;
-			$post['menu_order']     = (int) $wp->menu_order;
+			$post['menuOrder']     = (int) $wp->menu_order;
 			$post['type']           = (string) $wp->post_type;
-			$post['post_password']  = (string) $wp->post_password;
-			$post['is_sticky']      = (int) $wp->is_sticky;
+			$post['password']  = (string) $wp->post_password;
+			$post['sticky']      = (int) $wp->is_sticky;
 
 			if ( isset( $wp->attachment_url ) ) {
-				$post['attachment_url'] = (string) $wp->attachment_url;
+				$post['attachmentUrl'] = (string) $wp->attachment_url;
 			}
 
 			foreach ( $item->category as $c ) {
 				$att = $c->attributes();
 				if ( isset( $att['nicename'] ) ) {
-					$post['terms'][] = array(
-						'name'   => (string) $c,
-						'slug'   => (string) $att['nicename'],
-						'domain' => (string) $att['domain'],
-					);
+					$post['terms'][] = $term_lookup[ (string) $att['nicename'] ];
 				}
 			}
 
 			foreach ( $wp->postmeta as $meta ) {
-				$post['postmeta'][] = array(
+				$post['meta'][] = array(
 					'key'   => (string) $meta->meta_key,
 					'value' => (string) $meta->meta_value,
 				);
