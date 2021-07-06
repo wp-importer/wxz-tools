@@ -16,10 +16,9 @@
 			"value": {
 				"description": "The value of a single metadata element.",
 				"type": "string"
-			},
-
-			"additionalProperties": false,
-			"required": [ "key", "value" ]
-		}
+			}
+		},
+		"additionalProperties": false,
+		"required": [ "key", "value" ]
 	}
 }
