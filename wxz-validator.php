@@ -15,10 +15,15 @@ $terminal_color_reset  = "\e[0m";
 $errors    = false;
 $validator = new WXZ_Validator;
 foreach ( $_SERVER['argv'] as $zip_filename ) {
-	if ( $validator->validate( $zip_filename ) ) {
+	$validation = $validator->validate( $zip_filename );
+	if ( $validation instanceof WP_Error ) {
+		echo $terminal_color_red, basename( $zip_filename ), ' is invalid!', $terminal_color_reset, PHP_EOL;
+		$errors = true;
+	} else {
 		if ( empty( $validator->counter ) ) {
 			$validator->raise_warning( 'empty', 'No data found inside the file.' );
 		}
+
 		if ( $validator->warnings ) {
 			echo PHP_EOL;
 		}
@@ -35,9 +40,6 @@ foreach ( $_SERVER['argv'] as $zip_filename ) {
 				echo '- ', $type, ': ', $count, PHP_EOL;
 			}
 		}
-	} else {
-		echo $terminal_color_red, basename( $zip_filename ), ' is invalid!', $terminal_color_reset, PHP_EOL;
-		$errors = true;
 	}
 }
 

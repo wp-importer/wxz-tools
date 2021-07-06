@@ -7,7 +7,6 @@ class WXZ_Validator {
 	public $errors   = 0;
 	public $warnings = 0;
 	public $counter  = array();
-	private $zip_filename = '';
 	private $json_validator;
 	private $error_formatter;
 	private $mimetype = 'application/vnd.WordPress.export+zip';
@@ -35,40 +34,37 @@ class WXZ_Validator {
 	public function raise_error( $code, $message ) {
 		$this->errors += 1;
 		echo 'ERR ', $message, PHP_EOL;
+		return new WP_Error( $code, $message );
 	}
 
 	public function raise_warning( $code, $message ) {
 		$this->warnings += 1;
 		echo 'WARN ', $message, PHP_EOL;
+		return new WP_Error( $code, $message );
 	}
 
 	public function verify_file_is_valid( $zip_filename ) {
 		if ( ! file_exists( $zip_filename ) ) {
-			$this->raise_error( 'file-exists', $zip_filename . ': file does not exist.' );
-			return false;
+			return $this->raise_error( 'file-exists', 'file does not exist.' );
 		}
 
 		if ( ! is_readable( $zip_filename ) ) {
-			$this->raise_error( 'file-accessible', $zip_filename . ': file not accessible.' );
-			return false;
+			return $this->raise_error( 'file-accessible', 'file not accessible.' );
 		}
 
 		$f = fopen( $zip_filename, 'rb' );
 		if ( "PK\x3\x4" !== fread( $f, 4 ) ) {
-			$this->raise_error( 'not-a-zip', $zip_filename . ': ZIP header could not be found.' );
-			return false;
+			return $this->raise_error( 'not-a-zip', 'ZIP header could not be found.' );
 		}
 
 		fseek( $f, 30 );
 		if ( 'mimetype' !== fread( $f, 8 ) ) {
-			$this->raise_error( 'first-file-not-mimetype', $zip_filename . ': The first file in the ZIP needs to be called mimetype.' );
-			return false;
+			return $this->raise_error( 'first-file-not-mimetype', 'The first file in the ZIP needs to be called mimetype.' );
 		}
 
 		fseek( $f, 38 );
 		if ( fread( $f, strlen( $this->mimetype ) ) === $this->mimetype ) {
-			$this->raise_error( 'first-file-not-mimetype', $zip_filename . ': The file mimetype must only contain "' . $this->mimetype . '".' );
-			return false;
+			return $this->raise_error( 'first-file-not-mimetype', 'The file mimetype must only contain "' . $this->mimetype . '".return ' );
 		}
 
 		return true;
@@ -79,20 +75,19 @@ class WXZ_Validator {
 		$this->warnings = 0;
 		$this->counter  = array();
 
-		if ( ! $this->verify_file_is_valid( $zip_filename ) ) {
-			return false;
+		$validation = $this->verify_file_is_valid( $zip_filename );
+		if ( $validation instanceof WP_Error ) {
+			return $validation;
 		}
 
 		$archive      = new PclZip( $zip_filename );
 		$zip_filename = basename( $zip_filename );
 		if ( ! $archive ) {
-			$this->raise_error( 'zip-library', $zip_filename . ': Error loading zip library.' );
-			return false;
+			return $this->raise_error( 'zip-library', 'Error loading zip library.' );
 		}
 		$archive_files = $archive->extract( PCLZIP_OPT_EXTRACT_AS_STRING );
 		if ( $archive->errorCode() ) {
-			$this->raise_error( 'zip-parsing', $zip_filename . ': ' . $archive->errorInfo() );
-			return false;
+			return $this->raise_error( 'zip-parsing', $archive->errorInfo() );
 		}
 
 		$files = array();
@@ -112,7 +107,11 @@ class WXZ_Validator {
 			$this->validate_file( $filename, $content );
 		}
 
-		return ! $this->errors;
+		if ( $this->errors ) {
+			return new WP_Error( 'not-valid', 'Because of the errors found, the file cannot be deemed valid.' );
+		}
+
+		return true;
 	}
 
 	public function validate_file( $filename, $content ) {
@@ -125,23 +124,22 @@ class WXZ_Validator {
 		if ( 'site' === $type ) {
 			if ( 'config' === $name ) {
 				if ( false === $item ) {
-					$this->raise_error( 'invalid-config', "$filename: could not be parsed." );
-					return false;
+					return $this->raise_error( 'invalid-config', "$filename: could not be parsed." );
 				}
 
 				if ( ! isset( $item->title ) ) {
-					$this->raise_warning( 'title-missing', "$filename: doesn't contain a title." );
+					return $this->raise_warning( 'title-missing', "$filename: doesn't contain a title." );
 				}
-				return false;
+
+				return true;
 			}
 		}
 
 		if ( ! isset( self::$schemas[ $type ] ) ) {
 			if ( ! isset( $schema_warned[ $type ] ) ) {
-				$this->raise_warning( 'unknown-schema', $filename . ': Unknown schema for "' . $type . '".' );
 				$schema_warned[ $type ] = true;
+				return $this->raise_warning( 'unknown-schema', $filename . ': Unknown schema for "' . $type . '".' );
 			}
-			return false;
 		}
 
 		$schema = self::$schemas[ $type ];
@@ -149,19 +147,17 @@ class WXZ_Validator {
 		try {
 			$result = $this->json_validator->validate( $item, $schema );
 		} catch ( Exception $e ) {
-			$this->raise_warning( 'unknown-schema', $filename . ': ' . $e->getMessage() );
-			return false;
+			return $this->raise_warning( 'unknown-schema', $filename . ': ' . $e->getMessage() );
 		}
 
 		if ( ! $result->isValid() ) {
-			$this->raise_warning(
+			return $this->raise_error(
 				'schema-error',
 				$filename . ': ' . json_encode(
 					$this->error_formatter->format( $result->error(), true ),
 					JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
 				)
 			);
-			return false;
 		}
 
 		if ( ! isset( $this->counter[ $type ] ) ) {
@@ -171,7 +167,7 @@ class WXZ_Validator {
 
 		$id = intval( $name );
 		if ( ! isset( $item->id ) || $item->id !== $id ) {
-			$this->raise_warning( 'id-mismatch', $filename . ': id in json (' . ( isset( $item->id ) ? $item->id : 'missing' ) . ') differs from filename.' );
+			return $this->raise_warning( 'id-mismatch', $filename . ': id in json (' . ( isset( $item->id ) ? $item->id : 'missing' ) . ') differs from filename.' );
 		}
 
 		return true;
