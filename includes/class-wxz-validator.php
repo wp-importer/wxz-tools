@@ -7,6 +7,7 @@ class WXZ_Validator {
 	public $errors   = 0;
 	public $warnings = 0;
 	public $counter  = array();
+	private $zip_filename = '';
 	private $json_validator;
 	private $error_formatter;
 	private $mimetype = 'application/vnd.WordPress.export+zip';
@@ -107,67 +108,72 @@ class WXZ_Validator {
 			$files[ $file['filename'] ] = trim( $file['content'] );
 		}
 
-		$schema_warned = array();
 		foreach ( $files as $filename => $content ) {
-			$file_id = "$zip_filename/$filename";
-
-			$type = dirname( $filename );
-			$name = basename( $filename, '.json' );
-			$item = json_decode( $content );
-
-			if ( 'site' === $type ) {
-				if ( 'config' === $name ) {
-					if ( false === $item ) {
-						$this->raise_error( 'invalid-config', "$file_id: could not be parsed." );
-						continue;
-					}
-
-					if ( ! isset( $item->title ) ) {
-						$this->raise_warning( 'title-missing', "$file_id: doesn't contain a title." );
-					}
-					continue;
-				}
-			}
-
-			if ( ! isset( self::$schemas[ $type ] ) ) {
-				if ( ! isset( $schema_warned[ $type ] ) ) {
-					$this->raise_warning( 'unknown-schema', $file_id . ': Unknown schema for "' . $type . '".' );
-					$schema_warned[ $type ] = true;
-				}
-				continue;
-			}
-
-			$schema = self::$schemas[ $type ];
-
-			try {
-				$result = $this->json_validator->validate( $item, $schema );
-			} catch ( Exception $e ) {
-				$this->raise_warning( 'unknown-schema', $file_id . ': ' . $e->getMessage() );
-				continue;
-			}
-
-			if ( ! $result->isValid() ) {
-				$this->raise_warning(
-					'schema-error',
-					$file_id . ': ' . json_encode(
-						$this->error_formatter->format( $result->error(), true ),
-						JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
-					)
-				);
-				continue;
-			}
-
-			if ( ! isset( $this->counter[ $type ] ) ) {
-				$this->counter[ $type ] = 0;
-			}
-			$this->counter[ $type ] += 1;
-
-			$id = intval( $name );
-			if ( ! isset( $item->id ) || $item->id !== $id ) {
-				$this->raise_warning( 'id-mismatch', $file_id . ': id in json (' . ( isset( $item->id ) ? $item->id : 'missing' ) . ') differs from filename.' );
-			}
+			$this->validate_file( $filename, $content );
 		}
 
 		return ! $this->errors;
+	}
+
+	public function validate_file( $filename, $content ) {
+		static $schema_warned = array();
+
+		$type = dirname( $filename );
+		$name = basename( $filename, '.json' );
+		$item = json_decode( $content );
+
+		if ( 'site' === $type ) {
+			if ( 'config' === $name ) {
+				if ( false === $item ) {
+					$this->raise_error( 'invalid-config', "$filename: could not be parsed." );
+					return false;
+				}
+
+				if ( ! isset( $item->title ) ) {
+					$this->raise_warning( 'title-missing', "$filename: doesn't contain a title." );
+				}
+				return false;
+			}
+		}
+
+		if ( ! isset( self::$schemas[ $type ] ) ) {
+			if ( ! isset( $schema_warned[ $type ] ) ) {
+				$this->raise_warning( 'unknown-schema', $filename . ': Unknown schema for "' . $type . '".' );
+				$schema_warned[ $type ] = true;
+			}
+			return false;
+		}
+
+		$schema = self::$schemas[ $type ];
+
+		try {
+			$result = $this->json_validator->validate( $item, $schema );
+		} catch ( Exception $e ) {
+			$this->raise_warning( 'unknown-schema', $filename . ': ' . $e->getMessage() );
+			return false;
+		}
+
+		if ( ! $result->isValid() ) {
+			$this->raise_warning(
+				'schema-error',
+				$filename . ': ' . json_encode(
+					$this->error_formatter->format( $result->error(), true ),
+					JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+				)
+			);
+			return false;
+		}
+
+		if ( ! isset( $this->counter[ $type ] ) ) {
+			$this->counter[ $type ] = 0;
+		}
+		$this->counter[ $type ] += 1;
+
+		$id = intval( $name );
+		if ( ! isset( $item->id ) || $item->id !== $id ) {
+			$this->raise_warning( 'id-mismatch', $filename . ': id in json (' . ( isset( $item->id ) ? $item->id : 'missing' ) . ') differs from filename.' );
+		}
+
+		return true;
 	}
 }
