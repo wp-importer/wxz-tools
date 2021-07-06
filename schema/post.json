@@ -82,6 +82,10 @@
 			"description": "Flag whether or not this post accepts pingbacks.",
 			"type": "boolean"
 		},
+		"attachmentUrl": {
+			"description": "When the post type is an attachment, this must be set to the URL of where the attachment file can be found.",
+			"type": "string"
+		},
 		"content": {
 			"description": "The content of the post. It can be stored as a string (eg, of HTML), or as an array of block objects.",
 			"$ref": "https://wordpress.org/schema/content.json"
@@ -90,24 +94,20 @@
 			"description": "The excerpt of the post. It can be stored as a string (eg, of HTML), or as an array of block objects.",
 			"$ref": "https://wordpress.org/schema/content.json"
 		},
-
-		"if": {
-			"properties": { "type": { "const": "attachment" } }
-		},
-		"then": {
-			"properties": {
-				"attachmentUrl": {
-					"description": "When the post type is an attachment, this must be set to the URL of where the attachment file can be found.",
-					"type": "string"
-				}
-			}
-		},
-
-
 		"meta": {
 			"description": "An array of post metadata.",
 			"$ref": "https://wordpress.org/schema/meta.json"
 		}
+	},
+
+	"if": {
+		"properties": { "type": { "const": "attachment" } }
+	},
+	"then": {
+		"required": [ "attachmentUrl" ]
+	},
+	"else": {
+		"not": { "required": [ "attachmentUrl" ] }
 	},
 
 	"additionalProperties": false,
