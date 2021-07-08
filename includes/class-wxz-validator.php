@@ -9,7 +9,7 @@ class WXZ_Validator {
 	public $counter  = array();
 	private $json_validator;
 	private $error_formatter;
-	private $mimetype = 'application/vnd.WordPress.export+zip';
+	private $mimetype = 'application/vnd.wordpress.export+zip';
 
 	// Maps the files in the directories to the schema.
 	public static $schemas = array(
