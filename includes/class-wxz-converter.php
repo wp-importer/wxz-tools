@@ -26,6 +26,11 @@ class WXZ_Converter {
 		return json_encode( $this->remove_empty_elements( $data ), JSON_PRETTY_PRINT );
 	}
 
+	private function get_new_id() {
+		static $id = 1e6;
+		return ++$id;
+	}
+
 	public function convert_wxr( $file ) {
 		$this->filelist = array();
 
@@ -98,7 +103,7 @@ class WXZ_Converter {
 			$a      = $author_arr->children( $namespaces['wp'] );
 			$login  = (string) $a->author_login;
 			if ( ! intval( $a->author_id ) ) {
-				$a->author_id = 1e6 + ( ++ $c );
+				$a->author_id = $this->get_new_id();
 			}
 			$author = array(
 				'version' => 1,
@@ -210,7 +215,7 @@ class WXZ_Converter {
 
 			$wp                     = $item->children( $namespaces['wp'] );
 			if ( ! intval( $wp->post_id ) ) {
-				$wp->post_id = 1e6 + ( ++ $c );
+				$wp->post_id = $this->get_new_id();
 			}
 			$post['id']             = intval( $wp->post_id );
 			$post['published']      = $this->format_date( $wp->post_date_gmt );
@@ -230,7 +235,19 @@ class WXZ_Converter {
 			foreach ( $item->category as $c ) {
 				$att = $c->attributes();
 				if ( isset( $att['nicename'] ) ) {
-					$post['terms'][] = $term_lookup[ (string) $att['nicename'] ];
+					$slug = (string) $att['nicename'];
+					if ( ! isset( $term_lookup[ $slug ] ) ) {
+						$term = array(
+							'version'     => 1,
+							'id'          => $this->get_new_id(),
+							'taxonomy'    => (string) $att['domain'],
+							'slug'        => $slug,
+							'name'        => $slug,
+						);
+						$this->add_file( 'terms/' . intval( $term['id'] ) . '.json', $this->json_encode( $term ) );
+						$term_lookup[ $slug ] =$term['id'];
+					}
+					$post['terms'][] = $term_lookup[ $slug ];
 				}
 			}
 
