@@ -1,0 +1,89 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://wordpress.org/schema/comment.json",
+
+	"title": "A comment object.",
+	"description": "A single comment.",
+
+	"type": "object",
+
+	"properties": {
+		"version": {
+			"description": "The schema version that this comment object adheres to.",
+			"type": "integer",
+			"const": 1
+		},
+		"id": {
+			"description": "The comment ID. It must be a positive integer.",
+			"type": "integer",
+			"minimum": 1
+		},
+		"author": {
+			"description": "",
+			"type": "object",
+			"properties": {
+				"id": {
+					"description": "If this comment was made by a registered user, this should be set to that user's ID.",
+					"type": "integer",
+					"minimum": 0
+				},
+				"name": {
+					"description": "A display name for the comment author.",
+					"type": "string"
+				},
+				"email": {
+					"description": "The comment author's email address.",
+					"type": "string",
+					"format": "email"
+				},
+				"url": {
+					"description": "The comment author's homepage URL.",
+					"type": "string",
+					"format": "uri"
+				},
+				"IP": {
+					"description": "The IP address of the comment author, when the comment was submitted.",
+					"type": "string",
+					"format": "ipv4"
+				}
+			},
+			"additionalProperties": false
+		},
+		"published": {
+			"description": "The timestamp of when this comment was published, in UTC.",
+			"type": "string",
+			"format": "date-time"
+		},
+		"approved": {
+			"description": "Whether this comment is approved or not. If a comment is spam, this status should be set to the string, 'spam'.",
+			"type": [ "string", "boolean" ],
+			"enum": [ true, false, "spam" ]
+		},
+		"type": {
+			"description": "The comment type. WordPress supports one comment type, 'comment'. Any other comment type needs to be supported through a plugin.",
+			"type": "string"
+		},
+		"parent": {
+			"description": "The comment ID of this comment's parent, or 0 if it doesn't have a parent.",
+			"type": "integer",
+			"minimum": 0
+		},
+		"post": {
+			"description": "The post ID of the post that this comment belongs to.",
+			"type": "integer",
+			"minimum": 0
+		},
+		"content": {
+			"description": "The content of the comment. It can be stored as a string (eg, of HTML), or as an array of block objects.",
+			"$ref": "https://wordpress.org/schema/content.json"
+		},
+
+		"meta": {
+			"description": "An array of comment metadata.",
+			"$ref": "https://wordpress.org/schema/meta.json"
+		}
+	},
+
+	"additionalProperties": false,
+	"required": [ "version" ]
+}
