@@ -64,8 +64,8 @@ class WXZ_Validator {
 		}
 
 		fseek( $f, 38 );
-		if ( fread( $f, strlen( $this->mimetype ) ) === $this->mimetype ) {
-			return $this->raise_error( 'first-file-not-mimetype', 'The file mimetype must only contain "' . $this->mimetype . '".return ' );
+		if ( fread( $f, strlen( $this->mimetype ) ) !== $this->mimetype ) {
+			return $this->raise_error( 'first-file-not-mimetype', 'The file mimetype must only contain "' . $this->mimetype . '".' );
 		}
 
 		return true;
@@ -152,6 +152,7 @@ class WXZ_Validator {
 		}
 
 		if ( ! $result->isValid() ) {
+			echo json_encode( $item, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ), PHP_EOL;
 			return $this->raise_error(
 				'schema-error',
 				$filename . ': ' . json_encode(
