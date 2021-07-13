@@ -252,6 +252,10 @@ class WXZ_Converter {
 			}
 
 			foreach ( $wp->postmeta as $meta ) {
+				if( empty( (string) $meta->meta_value ) ) {
+					continue;
+				}
+
 				$post['meta'][] = array(
 					'key'   => (string) $meta->meta_key,
 					'value' => (string) $meta->meta_value,
