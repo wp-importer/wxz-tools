@@ -252,7 +252,7 @@ class WXZ_Converter {
 			}
 
 			foreach ( $wp->postmeta as $meta ) {
-				if( (string) $meta->meta_value  === "" ) {
+				if ( strval( $meta->meta_value ) === "" ) {
 					continue;
 				}
 
