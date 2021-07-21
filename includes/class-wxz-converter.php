@@ -3,12 +3,39 @@
 class WXZ_Converter {
 	public $filelist = array();
 
+	private function remove_empty_metadata_values( $meta_item ) {
+		if ( empty( $meta_item['value'] ) ) {
+			return false;
+		}
+
+		return $meta_item;
+	}
+
+	private function is_metadata_array( $meta_item ) {
+		return array_keys( $meta_item ) === array( 'key', 'value' );
+	}
+
 	private function remove_empty_elements( $array ) {
 		return array_filter(
 			array_map(
 				function( $el ) {
 					if ( is_array( $el ) ) {
-						return $this->remove_empty_elements( $el );
+						if ( $this->is_metadata_array( $el ) ) {
+							return $this->remove_empty_metadata_values( $el );
+						}
+
+						$filtered = $this->remove_empty_elements( $el );
+
+						// if the first element is a metadata entry, we make sure to return
+						// a re-indexed array using `array_values` as we might have removed
+						// empty indexes from between.
+						$reversed_array = array_reverse( $el );
+						$first_element  = array_pop( $reversed_array );
+						if ( is_array( $first_element ) && $this->is_metadata_array( $first_element ) ) {
+							return array_values( $filtered );
+						}
+
+						return $filtered;
 					}
 
 					if ( '' !== $el && 0 !== $el ) {
