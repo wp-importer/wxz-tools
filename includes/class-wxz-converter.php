@@ -3,10 +3,47 @@
 class WXZ_Converter {
 	public $filelist = array();
 
+	// From wp-includes/functions.php
+	private function wp_is_numeric_array( $data ) {
+		if ( version_compare( PHP_VERSION, '8.1.0', '>=' ) ) {
+			return array_is_list( $data );
+		}
+
+	    if ( ! is_array( $data ) ) {
+	        return false;
+	    }
+
+	    $keys        = array_keys( $data );
+	    $string_keys = array_filter( $keys, 'is_string' );
+
+	    return count( $string_keys ) === 0;
+	}
+
+	private function remove_empty_metadata_values( $meta_item ) {
+		if ( empty( $meta_item['value'] ) ) {
+			return false;
+		}
+
+		return $meta_item;
+	}
+
+	private function is_metadata_array( $meta_item ) {
+		return is_array( $meta_item ) && array_keys( $meta_item ) === array( 'key', 'value' );
+	}
+
 	private function remove_empty_elements( $array ) {
 		return array_filter(
 			array_map(
 				function( $el ) {
+					if ( $this->is_metadata_array( $el ) ) {
+						return $this->remove_empty_metadata_values( $el );
+					}
+
+					if ( $this->wp_is_numeric_array( $el ) ) {
+						// Re-index to ensure this continues to be a list array.
+						return array_values( $this->remove_empty_elements( $el ) );
+					}
+
 					if ( is_array( $el ) ) {
 						return $this->remove_empty_elements( $el );
 					}
