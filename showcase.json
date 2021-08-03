@@ -1,0 +1,55 @@
+{
+    "config": {
+        "version": 1,
+        "title": "Fast Bug",
+        "link": "https:\/\/fast-bug.jurassic.ninja",
+        "description": "Just another WordPress site",
+        "date": "Tue, 03 Aug 2021 08:16:40 +0000",
+        "language": "en-US",
+        "base_site_url": "https:\/\/fast-bug.jurassic.ninja",
+        "base_blog_url": "https:\/\/fast-bug.jurassic.ninja"
+    },
+    "users": [
+        {
+            "version": 1,
+            "id": 1,
+            "username": "demo",
+            "display_name": "demo",
+            "email": "oskosk+jurassicninja+new+site+created@gmail.com"
+        }
+    ],
+    "terms": [
+        {
+            "version": 1,
+            "id": 1,
+            "taxonomy": "category",
+            "name": "Uncategorized",
+            "slug": "uncategorized",
+            "parent": "",
+            "description": "",
+            "termmeta": []
+        }
+    ],
+    "posts": [
+        {
+            "version": 1,
+            "title": "Showcase",
+            "author": "demo",
+            "status": "publish",
+            "content": "<!-- wp:paragraph -->\n<p>We're introducing a new format for WordPress exports: WXZ<\/p>\n<!-- \/wp:paragraph -->\n\n<!-- wp:heading -->\n<h2>Structure<\/h2>\n<!-- \/wp:heading -->\n\n<!-- wp:paragraph -->\n<p>A WXZ file is a ZIP file that contains JSON files in various directories. This is a departure from the previous XML based WXR format and was created to give more flexibility for exports. Specifically, it makes it possible to:<\/p>\n<!-- \/wp:paragraph -->\n\n<!-- wp:list -->\n<ul><li>Allow plugins to store data in an export file and help restore the data upon import.<\/li><li>Bundle media files inside the export file.<\/li><li>Access specific items through the file structure.<\/li><\/ul>\n<!-- \/wp:list -->\n\n<!-- wp:heading -->\n<h2>New Uses<\/h2>\n<!-- \/wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Representations<\/p>\n<!-- \/wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>Different representations of the data are made possible via converters:<\/p>\n<!-- \/wp:paragraph -->\n\n<!-- wp:list -->\n<ul><li>In the SQLite representation, you can run SQL queries to get your data. Maybe some day you'll be able to run WordPress directly off this file.<\/li><li>The Big JSON bundles all JSON data contained in the ZIP file into a single JSON file which allows to directly query the file with tools like <code>jq<\/code> or serve this web page.<\/li><\/ul>\n<!-- \/wp:list -->\n\n<!-- wp:heading -->\n<h2>Tooling<\/h2>\n<!-- \/wp:heading -->\n\n<!-- wp:paragraph -->\n<p>In order to test the viability of our new format, we created two important tools:<\/p>\n<!-- \/wp:paragraph -->\n\n<!-- wp:heading {\"level\":3} -->\n<h3>Converter<\/h3>\n<!-- \/wp:heading -->\n\n<!-- wp:paragraph -->\n<p>This allows you to convert your WXR files to WXZ.<\/p>\n<!-- \/wp:paragraph -->\n\n<!-- wp:heading {\"level\":3} -->\n<h3>Validator<\/h3>\n<!-- \/wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Ensure that your WXZ file is valid.<\/p>\n<!-- \/wp:paragraph -->",
+            "excerpt": "",
+            "type": "page",
+            "parent": 0,
+            "password": "",
+            "comment_status": "closed",
+            "ping_status": "closed",
+            "menu_order": 0,
+            "is_sticky": 0,
+            "date_utc": "2021-08-03 08:12:41",
+            "date_modified_utc": "2021-08-03 08:12:41",
+            "postmeta": {
+                "_edit_lock": "1627978324:1"
+            }
+        }
+    ]
+}
