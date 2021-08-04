@@ -1,6 +1,8 @@
 WXZ Tools
 =========
 
+See our [Showcase Page](https://wp-importer.github.io/wxz-tools/showcase.html) which uses the [exported file](https://github.com/wp-importer/wxz-tools/blob/showcase/showcase.json) directly for display.
+
 In this repository you can find tools for handling the new WXZ file format (spec to follow).
 
 - `wxz-big-json.php` converts a WXZ file into a "big json" file (all data contained in one JSON).
