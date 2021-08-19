@@ -161,16 +161,16 @@ class WXZ_Converter {
 		// grab cats, tags and terms
 		foreach ( $xml->xpath( '/rss/channel/wp:category' ) as $term_arr ) {
 			$t        = $term_arr->children( $namespaces['wp'] );
+
 			$category = array(
 				'version'     => 1,
-				'id'          => intval( $t->term_id ),
+				'id'          => (int) $t->term_id,
 				'taxonomy'    => 'category',
-				'name'        => (string) $t->category_nicename,
-				'parent'      => (int) $t->category_parent,
-				'slug'        => (string) $t->cat_name,
+				'name'        => (string) $t->cat_name,
+				'slug'        => (string) $t->category_nicename,
 				'description' => (string) $t->category_description,
 			);
-			$term_lookup[ $category['slug'] ] = $category['id'];
+			$term_lookup['category'][ $category['slug'] ] = $category['id'];
 
 			foreach ( $t->termmeta as $meta ) {
 				$category['termmeta'][] = array(
@@ -179,20 +179,27 @@ class WXZ_Converter {
 				);
 			}
 
+			$parent = (string) $t->category_parent;
+			$category['parent'] = !empty($parent)
+			          && isset($term_lookup['category'][$parent])
+				? $term_lookup['category'][$parent]
+				: 0;
+
 			$terms[] = $category;
 		}
 
 		foreach ( $xml->xpath( '/rss/channel/wp:tag' ) as $term_arr ) {
 			$t   = $term_arr->children( $namespaces['wp'] );
+
 			$tag = array(
 				'version'     => 1,
-				'id'          => intval( $t->term_id ),
+				'id'          => (int) $t->term_id,
 				'taxonomy'    => 'tag',
 				'slug'        => (string) $t->tag_slug,
 				'name'        => (string) $t->tag_name,
 				'description' => (string) $t->tag_description,
 			);
-			$term_lookup[ $tag['slug'] ] = $tag['id'];
+			$term_lookup['tag'][ $tag['slug'] ] = $tag['id'];
 
 			foreach ( $t->termmeta as $meta ) {
 				$tag['termmeta'][] = array(
@@ -205,16 +212,16 @@ class WXZ_Converter {
 
 		foreach ( $xml->xpath( '/rss/channel/wp:term' ) as $term_arr ) {
 			$t    = $term_arr->children( $namespaces['wp'] );
+
 			$term = array(
 				'version'     => 1,
-				'id'          => intval( $t->term_id ),
+				'id'          => (int) $t->term_id,
 				'taxonomy'    => (string) $t->term_taxonomy,
 				'slug'        => (string) $t->term_slug,
-				'parent'      => (string) $t->term_parent,
 				'name'        => (string) $t->term_name,
 				'description' => (string) $t->term_description,
 			);
-			$term_lookup[ $term['slug'] ] = $term['id'];
+			$term_lookup[$term['taxonomy']][ $term['slug'] ] = $term['id'];
 
 			foreach ( $t->termmeta as $meta ) {
 				$term['termmeta'][] = array(
@@ -222,6 +229,12 @@ class WXZ_Converter {
 					'value' => (string) $meta->meta_value,
 				);
 			}
+
+			$parent = (string) $t->term_parent;
+			$term['parent'] = !empty($parent) && isset($term_lookup[$term['taxonomy']][$parent])
+				? $term_lookup[$term['taxonomy']][$parent]
+				: 0;
+
 
 			$terms[] = $term;
 		}
@@ -273,7 +286,7 @@ class WXZ_Converter {
 				$att = $c->attributes();
 				if ( isset( $att['nicename'] ) ) {
 					$slug = (string) $att['nicename'];
-					if ( ! isset( $term_lookup[ $slug ] ) ) {
+					if ( ! isset( $term_lookup[(string) $att['domain']][ $slug ] ) ) {
 						$term = array(
 							'version'     => 1,
 							'id'          => $this->get_new_id(),
@@ -282,9 +295,9 @@ class WXZ_Converter {
 							'name'        => $slug,
 						);
 						$this->add_file( 'terms/' . intval( $term['id'] ) . '.json', $this->json_encode( $term ) );
-						$term_lookup[ $slug ] =$term['id'];
+						$term_lookup[(string) $att['domain']][ $slug ] =$term['id'];
 					}
-					$post['terms'][] = $term_lookup[ $slug ];
+					$post['terms'][] = $term_lookup[(string) $att['domain']][ $slug ];
 				}
 			}
 
