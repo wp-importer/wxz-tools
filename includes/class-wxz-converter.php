@@ -173,7 +173,7 @@ class WXZ_Converter {
 			$term_lookup['category'][ $category['slug'] ] = $category['id'];
 
 			foreach ( $t->termmeta as $meta ) {
-				$category['termmeta'][] = array(
+				$category['meta'][] = array(
 					'key'   => (string) $meta->meta_key,
 					'value' => (string) $meta->meta_value,
 				);
@@ -202,7 +202,7 @@ class WXZ_Converter {
 			$term_lookup['tag'][ $tag['slug'] ] = $tag['id'];
 
 			foreach ( $t->termmeta as $meta ) {
-				$tag['termmeta'][] = array(
+				$tag['meta'][] = array(
 					'key'   => (string) $meta->meta_key,
 					'value' => (string) $meta->meta_value,
 				);
@@ -224,7 +224,7 @@ class WXZ_Converter {
 			$term_lookup[$term['taxonomy']][ $term['slug'] ] = $term['id'];
 
 			foreach ( $t->termmeta as $meta ) {
-				$term['termmeta'][] = array(
+				$term['meta'][] = array(
 					'key'   => (string) $meta->meta_key,
 					'value' => (string) $meta->meta_value,
 				);
