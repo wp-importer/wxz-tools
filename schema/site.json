@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wordpress.org/schema/site.json",
+
+  "title": "Site configuration",
+  "description": "Configuration parameters from the source site.",
+
+  "type": "object",
+
+    "properties": {
+      "title": {
+        "description": "The title of the site.",
+        "type": "string"
+      },
+      "link": {
+        "description": "The link of the site.",
+        "type": "string"
+      },
+      "description": {
+        "description": "The description of the site.",
+        "type": "string"
+      },
+      "date": {
+        "description": "The date the WXZ was generated, in UTC.",
+        "type": "date-time"
+      },
+      "language": {
+        "description": "The language of the site.",
+        "type": "string"
+      }
+    }
+}
